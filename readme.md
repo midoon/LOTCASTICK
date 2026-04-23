@@ -1,4 +1,4 @@
-# 📊 LOTCASTICK - Trading SaaS Platform (PWA)
+# LOTCASTICK - Trading SaaS Platform (PWA)
 
 ## Product Overview
 
@@ -10,7 +10,7 @@ Fokus utama aplikasi:
 
 ---
 
-# 🚀 Tech Stack
+# Tech Stack
 
 ## Frontend
 
@@ -36,7 +36,7 @@ Fokus utama aplikasi:
 
 ---
 
-# 🎯 Target Users
+# Target Users
 
 - Forex Trader
 - Crypto Trader
@@ -44,7 +44,7 @@ Fokus utama aplikasi:
 
 ---
 
-# 🧩 Core Features
+# Core Features
 
 ## 1. Trading Plan
 
@@ -93,7 +93,7 @@ Fokus utama aplikasi:
 
 ---
 
-# 🌟 Advanced Features (Premium)
+# Advanced Features (Premium)
 
 ## 1. AI Trading Insights
 
@@ -154,9 +154,9 @@ Fokus utama aplikasi:
 
 ---
 
-# 💰 Pricing Plan
+# Pricing Plan
 
-## 🟢 Free Plan
+## Free Plan
 
 **Target:** User baru
 
@@ -168,7 +168,7 @@ Fokus utama aplikasi:
 
 ---
 
-## 🔵 Pro Plan ($5–10 / bulan)
+## Pro Plan ($5–10 / bulan)
 
 **Target:** Trader pemula–menengah
 
@@ -180,7 +180,7 @@ Fokus utama aplikasi:
 
 ---
 
-## 🟣 Premium Plan ($15–25 / bulan)
+## Premium Plan ($15–25 / bulan)
 
 **Target:** Trader serius
 
@@ -193,14 +193,14 @@ Fokus utama aplikasi:
 
 ---
 
-## 🟡 Annual Plan
+## Annual Plan
 
 - Diskon 20–40%
 - Prioritas fitur baru
 
 ---
 
-# 🧠 Unique Value Proposition
+# Unique Value Proposition
 
 - Trading journal + analytics dalam satu platform
 - Fokus pada **disiplin dan psikologi trading**
@@ -209,7 +209,7 @@ Fokus utama aplikasi:
 
 ---
 
-# 📈 Roadmap (MVP → Scale)
+# Roadmap (MVP → Scale)
 
 ## Phase 1 (MVP)
 
@@ -237,7 +237,7 @@ Fokus utama aplikasi:
 
 ---
 
-# 🔐 Security & Compliance
+# Security & Compliance
 
 - JWT Authentication
 - Data encryption
@@ -247,7 +247,7 @@ Fokus utama aplikasi:
 
 ---
 
-# 📌 Conclusion
+# Conclusion
 
 Platform ini dirancang bukan hanya sebagai tools, tetapi sebagai:
 
