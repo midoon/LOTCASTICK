@@ -1,0 +1,56 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API Documentation",
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "Admin Auth",
+      "description": "Operations related to admin authentication"
+    },
+    {
+      "name": "Admin Dashboard",
+      "description": "Operations related to admin dashboard functionalities"
+    },
+    {
+      "name": "Admin Plan Management",
+      "description": "Operations related to managing admin plans"
+    }
+  ],
+  "paths": {
+    "/admin/auth/login": {
+      "post": {
+        "tags": ["Admin Auth"],
+        "summary": "Admin login",
+        "description": "Authenticate admin and return a token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "username": "admin",
+                "password": "admin123"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful login",
+            "content": {
+              "application/json": {
+                "example": {
+                  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  }
+}
