@@ -1,0 +1,1529 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Trading Journal + Prop Firm Simulator API",
+    "description": "REST API for the Trading Journal & Prop Firm Challenge Simulator platform. All protected endpoints require Bearer JWT authentication. Financial values are returned as strings to preserve decimal precision.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Engineering Team",
+      "email": "engineering@tradejournal.io"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.tradejournal.io/v1",
+      "description": "Production"
+    },
+    {
+      "url": "https://api.staging.tradejournal.io/v1",
+      "description": "Staging"
+    },
+    {
+      "url": "http://localhost:8080/v1",
+      "description": "Local Development"
+    }
+  ],
+  "tags": [
+    { "name": "Auth", "description": "Authentication and session management" },
+    { "name": "Users", "description": "User profile management" },
+    { "name": "Simulations", "description": "Prop firm simulation lifecycle" },
+    { "name": "Trades", "description": "Trade journal entries" },
+    { "name": "Trade Images", "description": "Screenshot attachments for trades" },
+    { "name": "Strategies", "description": "User-defined trading strategies" },
+    { "name": "Dashboard", "description": "Simulation dashboard and status" },
+    { "name": "Analytics", "description": "Performance analytics and reporting" },
+    { "name": "Templates", "description": "Challenge template reference data" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT access token obtained from POST /auth/login"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["success", "error"],
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": { "type": "string", "example": "VALIDATION_ERROR", "description": "Machine-readable error code" },
+              "message": { "type": "string", "example": "Validation failed", "description": "Human-readable summary" },
+              "details": {
+                "type": "array",
+                "description": "Field-level validation errors (present only for 422)",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": { "type": "string", "example": "email" },
+                    "message": { "type": "string", "example": "must be a valid email address" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "example": 1 },
+          "per_page": { "type": "integer", "example": 50 },
+          "total_items": { "type": "integer", "example": 248 },
+          "total_pages": { "type": "integer", "example": 5 },
+          "has_next": { "type": "boolean", "example": true },
+          "has_prev": { "type": "boolean", "example": false }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "required": ["success", "data"],
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": { "type": "object" }
+        }
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "email": { "type": "string", "format": "email" },
+          "display_name": { "type": "string" },
+          "timezone": { "type": "string", "example": "America/New_York" },
+          "default_currency": { "type": "string", "example": "USD" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AuthTokens": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string", "description": "JWT access token (1 hour expiry)" },
+          "refresh_token": { "type": "string", "description": "Refresh token (7 day expiry)" },
+          "token_type": { "type": "string", "example": "Bearer" },
+          "expires_in": { "type": "integer", "example": 3600, "description": "Access token expiry in seconds" }
+        }
+      },
+      "SimulationStatus": {
+        "type": "string",
+        "enum": ["ACTIVE", "PASSED", "FAILED", "PAUSED"]
+      },
+      "DrawdownType": {
+        "type": "string",
+        "enum": ["STATIC", "DAILY", "TRAILING", "COMBINED"]
+      },
+      "SimulationRules": {
+        "type": "object",
+        "required": ["drawdown_type", "profit_target_pct", "min_trading_days"],
+        "properties": {
+          "drawdown_type": { "$ref": "#/components/schemas/DrawdownType" },
+          "max_drawdown_pct": { "type": "string", "example": "10.0000", "nullable": true },
+          "daily_drawdown_pct": { "type": "string", "example": "5.0000", "nullable": true },
+          "trailing_drawdown_pct": { "type": "string", "example": "10.0000", "nullable": true },
+          "profit_target_pct": { "type": "string", "example": "10.0000" },
+          "min_trading_days": { "type": "integer", "minimum": 0, "example": 10 },
+          "consistency_rule_enabled": { "type": "boolean", "example": false },
+          "consistency_threshold_pct": { "type": "string", "example": "30.0000", "nullable": true },
+          "daily_reset_timezone": { "type": "string", "example": "UTC" },
+          "daily_reset_time": { "type": "string", "example": "00:00:00" }
+        }
+      },
+      "SimulationSummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "FTMO $100K Phase 1" },
+          "account_size": { "type": "string", "example": "100000.00000000" },
+          "current_equity": { "type": "string", "example": "102500.00000000" },
+          "currency": { "type": "string", "example": "USD" },
+          "status": { "$ref": "#/components/schemas/SimulationStatus" },
+          "started_at": { "type": "string", "format": "date" },
+          "passed_at": { "type": "string", "format": "date-time", "nullable": true },
+          "failed_at": { "type": "string", "format": "date-time", "nullable": true },
+          "total_trades": { "type": "integer" },
+          "trading_days_completed": { "type": "integer" },
+          "pnl_pct": { "type": "string", "example": "2.5000" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SimulationDetail": {
+        "allOf": [
+          { "$ref": "#/components/schemas/SimulationSummary" },
+          {
+            "type": "object",
+            "properties": {
+              "notes": { "type": "string", "nullable": true },
+              "template_id": { "type": "string", "format": "uuid", "nullable": true },
+              "rules": { "$ref": "#/components/schemas/SimulationRules" },
+              "risk_status": { "$ref": "#/components/schemas/RiskStatus" }
+            }
+          }
+        ]
+      },
+      "RiskStatus": {
+        "type": "object",
+        "properties": {
+          "status": { "$ref": "#/components/schemas/SimulationStatus" },
+          "equity": { "type": "string", "example": "102500.00000000" },
+          "drawdown_used_pct": { "type": "string", "example": "2.50" },
+          "drawdown_remaining_pct": { "type": "string", "example": "7.50" },
+          "drawdown_remaining_amount": { "type": "string", "example": "7500.00000000" },
+          "daily_drawdown_used_pct": { "type": "string", "example": "0.80", "nullable": true },
+          "daily_drawdown_remaining_pct": { "type": "string", "example": "4.20", "nullable": true },
+          "trailing_floor": { "type": "string", "example": "90000.00000000", "nullable": true },
+          "high_water_mark": { "type": "string", "example": "102500.00000000", "nullable": true },
+          "profit_target_amount": { "type": "string", "example": "10000.00000000" },
+          "profit_achieved_amount": { "type": "string", "example": "2500.00000000" },
+          "profit_achieved_pct": { "type": "string", "example": "25.00" },
+          "trading_days_completed": { "type": "integer", "example": 6 },
+          "trading_days_required": { "type": "integer", "example": 10 },
+          "consistency_score_pct": { "type": "string", "example": "22.30", "nullable": true },
+          "violations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "violation_type": { "type": "string", "example": "DAILY_DRAWDOWN" },
+                "equity_at_violation": { "type": "string" },
+                "occurred_at": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        }
+      },
+      "TradeDirection": {
+        "type": "string",
+        "enum": ["LONG", "SHORT"]
+      },
+      "TradeSession": {
+        "type": "string",
+        "enum": ["ASIA", "LONDON", "NEW_YORK", "OVERLAP"]
+      },
+      "Trade": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "simulation_id": { "type": "string", "format": "uuid" },
+          "strategy_id": { "type": "string", "format": "uuid", "nullable": true },
+          "strategy_name": { "type": "string", "nullable": true },
+          "symbol": { "type": "string", "example": "XAUUSD" },
+          "direction": { "$ref": "#/components/schemas/TradeDirection" },
+          "entry_price": { "type": "string", "example": "1985.50000000" },
+          "exit_price": { "type": "string", "example": "1992.30000000" },
+          "stop_loss": { "type": "string", "nullable": true },
+          "take_profit": { "type": "string", "nullable": true },
+          "lot_size": { "type": "string", "example": "0.5000" },
+          "pnl": { "type": "string", "example": "340.00000000" },
+          "pnl_pct": { "type": "string", "example": "0.340000" },
+          "risk_amount": { "type": "string", "nullable": true },
+          "rr_ratio": { "type": "string", "nullable": true },
+          "session": { "$ref": "#/components/schemas/TradeSession" },
+          "entry_time": { "type": "string", "format": "date-time" },
+          "exit_time": { "type": "string", "format": "date-time" },
+          "trade_date": { "type": "string", "format": "date" },
+          "notes": { "type": "string", "nullable": true },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "images": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TradeImageMeta" }
+          },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TradeImageMeta": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "url": { "type": "string", "format": "uri", "description": "Pre-signed URL for image access" },
+          "label": { "type": "string", "nullable": true },
+          "mime_type": { "type": "string" },
+          "file_size_bytes": { "type": "integer" },
+          "sort_order": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Strategy": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "ICT OB Reversal" },
+          "description": { "type": "string", "nullable": true },
+          "color_hex": { "type": "string", "example": "#6366F1" },
+          "trade_count": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "DashboardData": {
+        "type": "object",
+        "properties": {
+          "simulation": { "$ref": "#/components/schemas/SimulationSummary" },
+          "risk_status": { "$ref": "#/components/schemas/RiskStatus" },
+          "equity_curve": {
+            "type": "array",
+            "description": "Equity data points sorted chronologically",
+            "items": {
+              "type": "object",
+              "properties": {
+                "timestamp": { "type": "string", "format": "date-time" },
+                "equity": { "type": "string" },
+                "trade_id": { "type": "string", "format": "uuid" }
+              }
+            }
+          },
+          "daily_pnl": {
+            "type": "array",
+            "description": "Daily P&L array for bar chart",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": { "type": "string", "format": "date" },
+                "pnl": { "type": "string" },
+                "trade_count": { "type": "integer" }
+              }
+            }
+          },
+          "calendar_heatmap": {
+            "type": "array",
+            "description": "Calendar heatmap data by date",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": { "type": "string", "format": "date" },
+                "pnl": { "type": "string" },
+                "trade_count": { "type": "integer" },
+                "win_rate": { "type": "string" }
+              }
+            }
+          },
+          "statistics": {
+            "type": "object",
+            "properties": {
+              "total_trades": { "type": "integer" },
+              "winning_trades": { "type": "integer" },
+              "losing_trades": { "type": "integer" },
+              "win_rate_pct": { "type": "string" },
+              "profit_factor": { "type": "string" },
+              "expectancy": { "type": "string" },
+              "average_rr": { "type": "string", "nullable": true },
+              "gross_profit": { "type": "string" },
+              "gross_loss": { "type": "string" },
+              "net_pnl": { "type": "string" },
+              "best_day_pnl": { "type": "string" },
+              "worst_day_pnl": { "type": "string" },
+              "avg_daily_pnl": { "type": "string" },
+              "max_drawdown_reached_pct": { "type": "string" },
+              "current_win_streak": { "type": "integer" },
+              "current_loss_streak": { "type": "integer" }
+            }
+          },
+          "recent_trades": {
+            "type": "array",
+            "maxItems": 10,
+            "items": { "$ref": "#/components/schemas/Trade" }
+          }
+        }
+      },
+      "AnalyticsData": {
+        "type": "object",
+        "properties": {
+          "by_symbol": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "symbol": { "type": "string" },
+                "trade_count": { "type": "integer" },
+                "win_rate_pct": { "type": "string" },
+                "total_pnl": { "type": "string" },
+                "avg_pnl": { "type": "string" },
+                "profit_factor": { "type": "string" },
+                "avg_rr": { "type": "string", "nullable": true }
+              }
+            }
+          },
+          "by_session": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "session": { "$ref": "#/components/schemas/TradeSession" },
+                "trade_count": { "type": "integer" },
+                "win_rate_pct": { "type": "string" },
+                "total_pnl": { "type": "string" },
+                "avg_pnl": { "type": "string" }
+              }
+            }
+          },
+          "by_strategy": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "strategy_id": { "type": "string", "format": "uuid", "nullable": true },
+                "strategy_name": { "type": "string" },
+                "trade_count": { "type": "integer" },
+                "win_rate_pct": { "type": "string" },
+                "total_pnl": { "type": "string" },
+                "expectancy": { "type": "string" },
+                "avg_rr": { "type": "string", "nullable": true }
+              }
+            }
+          },
+          "by_day_of_week": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "day_of_week": { "type": "integer", "minimum": 1, "maximum": 7, "description": "1=Monday, 7=Sunday" },
+                "day_name": { "type": "string", "example": "Monday" },
+                "trade_count": { "type": "integer" },
+                "win_rate_pct": { "type": "string" },
+                "avg_pnl": { "type": "string" }
+              }
+            }
+          },
+          "drawdown_analysis": {
+            "type": "object",
+            "properties": {
+              "max_drawdown_reached_pct": { "type": "string" },
+              "max_drawdown_reached_amount": { "type": "string" },
+              "recovery_factor": { "type": "string", "nullable": true },
+              "longest_drawdown_days": { "type": "integer" }
+            }
+          },
+          "streak_analysis": {
+            "type": "object",
+            "properties": {
+              "current_win_streak": { "type": "integer" },
+              "current_loss_streak": { "type": "integer" },
+              "longest_win_streak": { "type": "integer" },
+              "longest_loss_streak": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "ChallengeTemplate": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "firm_name": { "type": "string" },
+          "account_size": { "type": "string" },
+          "currency": { "type": "string" },
+          "drawdown_type": { "$ref": "#/components/schemas/DrawdownType" },
+          "max_drawdown_pct": { "type": "string", "nullable": true },
+          "daily_drawdown_pct": { "type": "string", "nullable": true },
+          "trailing_drawdown_pct": { "type": "string", "nullable": true },
+          "profit_target_pct": { "type": "string" },
+          "min_trading_days": { "type": "integer" },
+          "consistency_rule_enabled": { "type": "boolean" },
+          "consistency_threshold_pct": { "type": "string", "nullable": true }
+        }
+      }
+    },
+    "parameters": {
+      "SimulationId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" },
+        "description": "Simulation UUID"
+      },
+      "TradeId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" },
+        "description": "Trade UUID"
+      },
+      "PageParam": {
+        "name": "page",
+        "in": "query",
+        "schema": { "type": "integer", "minimum": 1, "default": 1 }
+      },
+      "PerPageParam": {
+        "name": "per_page",
+        "in": "query",
+        "schema": { "type": "integer", "minimum": 1, "maximum": 200, "default": 50 }
+      }
+    },
+    "responses": {
+      "401Unauthorized": {
+        "description": "Missing or invalid JWT token",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": { "success": false, "error": { "code": "UNAUTHORIZED", "message": "Invalid or expired token" } }
+          }
+        }
+      },
+      "403Forbidden": {
+        "description": "Authenticated but not authorized to access this resource",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "404NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": { "success": false, "error": { "code": "NOT_FOUND", "message": "Resource not found" } }
+          }
+        }
+      },
+      "422ValidationError": {
+        "description": "Request body validation failed",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": {
+              "success": false,
+              "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Validation failed",
+                "details": [
+                  { "field": "email", "message": "must be a valid email address" },
+                  { "field": "password", "message": "must be at least 8 characters" }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    { "BearerAuth": [] }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register a new user",
+        "security": [],
+        "operationId": "authRegister",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "display_name"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "minLength": 8, "example": "Secure123!" },
+                  "display_name": { "type": "string", "minLength": 2, "maxLength": 100 },
+                  "timezone": { "type": "string", "example": "UTC", "default": "UTC" },
+                  "default_currency": { "type": "string", "example": "USD", "default": "USD" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": { "$ref": "#/components/schemas/UserProfile" },
+                        "tokens": { "$ref": "#/components/schemas/AuthTokens" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email already registered",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": { "success": false, "error": { "code": "EMAIL_TAKEN", "message": "Email is already registered" } }
+              }
+            }
+          },
+          "422": { "$ref": "#/components/responses/422ValidationError" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login with email and password",
+        "security": [],
+        "operationId": "authLogin",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": { "$ref": "#/components/schemas/UserProfile" },
+                        "tokens": { "$ref": "#/components/schemas/AuthTokens" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials or account locked",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": { "$ref": "#/components/responses/422ValidationError" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Logout and revoke refresh token",
+        "operationId": "authLogout",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refresh_token"],
+                "properties": {
+                  "refresh_token": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Logged out successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "type": "object", "properties": { "message": { "type": "string", "example": "Logged out successfully" } } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Refresh access token",
+        "security": [],
+        "operationId": "authRefresh",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refresh_token"],
+                "properties": {
+                  "refresh_token": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "New tokens issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/AuthTokens" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get current user profile",
+        "operationId": "getUserProfile",
+        "responses": {
+          "200": {
+            "description": "User profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/UserProfile" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" }
+        }
+      },
+      "put": {
+        "tags": ["Users"],
+        "summary": "Update current user profile",
+        "operationId": "updateUserProfile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "display_name": { "type": "string", "minLength": 2, "maxLength": 100 },
+                  "timezone": { "type": "string" },
+                  "default_currency": { "type": "string", "pattern": "^[A-Z]{3}$" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/UserProfile" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "422": { "$ref": "#/components/responses/422ValidationError" }
+        }
+      }
+    },
+    "/simulations": {
+      "get": {
+        "tags": ["Simulations"],
+        "summary": "List user simulations",
+        "operationId": "listSimulations",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "$ref": "#/components/schemas/SimulationStatus" },
+            "description": "Filter by status"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["created_at", "-created_at", "name", "-name", "equity", "-equity"], "default": "-created_at" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated simulation list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": { "type": "array", "items": { "$ref": "#/components/schemas/SimulationSummary" } },
+                        "pagination": { "$ref": "#/components/schemas/PaginationMeta" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Simulations"],
+        "summary": "Create a new simulation",
+        "operationId": "createSimulation",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "account_size", "rules"],
+                "properties": {
+                  "name": { "type": "string", "minLength": 1, "maxLength": 150 },
+                  "account_size": { "type": "string", "example": "100000.00" },
+                  "currency": { "type": "string", "default": "USD" },
+                  "started_at": { "type": "string", "format": "date" },
+                  "notes": { "type": "string", "nullable": true },
+                  "template_id": { "type": "string", "format": "uuid", "nullable": true, "description": "If provided, rules are copied from template and the 'rules' field can be omitted" },
+                  "rules": { "$ref": "#/components/schemas/SimulationRules" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Simulation created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/SimulationDetail" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "422": { "$ref": "#/components/responses/422ValidationError" }
+        }
+      }
+    },
+    "/simulations/{id}": {
+      "get": {
+        "tags": ["Simulations"],
+        "summary": "Get simulation detail",
+        "operationId": "getSimulation",
+        "parameters": [ { "$ref": "#/components/parameters/SimulationId" } ],
+        "responses": {
+          "200": {
+            "description": "Simulation detail with rules and risk status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/SimulationDetail" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Simulations"],
+        "summary": "Update simulation metadata",
+        "description": "Only name and notes can be updated. Rules are immutable after first trade.",
+        "operationId": "updateSimulation",
+        "parameters": [ { "$ref": "#/components/parameters/SimulationId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "minLength": 1, "maxLength": 150 },
+                  "notes": { "type": "string", "nullable": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Simulation updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/SimulationDetail" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "422": { "$ref": "#/components/responses/422ValidationError" }
+        }
+      },
+      "delete": {
+        "tags": ["Simulations"],
+        "summary": "Delete (soft delete) a simulation",
+        "operationId": "deleteSimulation",
+        "parameters": [ { "$ref": "#/components/parameters/SimulationId" } ],
+        "responses": {
+          "200": {
+            "description": "Simulation soft-deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "type": "object", "properties": { "message": { "type": "string", "example": "Simulation scheduled for deletion in 30 days" } } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" }
+        }
+      }
+    },
+    "/simulations/{id}/trades": {
+      "get": {
+        "tags": ["Trades"],
+        "summary": "List trades in a simulation",
+        "operationId": "listTrades",
+        "parameters": [
+          { "$ref": "#/components/parameters/SimulationId" },
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" },
+          { "name": "symbol", "in": "query", "schema": { "type": "string" } },
+          { "name": "direction", "in": "query", "schema": { "$ref": "#/components/schemas/TradeDirection" } },
+          { "name": "session", "in": "query", "schema": { "$ref": "#/components/schemas/TradeSession" } },
+          { "name": "strategy_id", "in": "query", "schema": { "type": "string", "format": "uuid" } },
+          { "name": "tag", "in": "query", "schema": { "type": "string" } },
+          { "name": "date_from", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "date_to", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "outcome", "in": "query", "schema": { "type": "string", "enum": ["WIN", "LOSS", "BREAKEVEN"] } },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["exit_time", "-exit_time", "pnl", "-pnl", "rr_ratio", "-rr_ratio"], "default": "-exit_time" }
+          },
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Full-text search on trade notes" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated trade list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": { "type": "array", "items": { "$ref": "#/components/schemas/Trade" } },
+                        "pagination": { "$ref": "#/components/schemas/PaginationMeta" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" }
+        }
+      },
+      "post": {
+        "tags": ["Trades"],
+        "summary": "Log a new trade",
+        "description": "Adds a trade and triggers risk engine recalculation. Response includes updated simulation risk_status.",
+        "operationId": "createTrade",
+        "parameters": [ { "$ref": "#/components/parameters/SimulationId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["symbol", "direction", "entry_price", "exit_price", "lot_size", "entry_time", "exit_time"],
+                "properties": {
+                  "symbol": { "type": "string", "maxLength": 20 },
+                  "direction": { "$ref": "#/components/schemas/TradeDirection" },
+                  "entry_price": { "type": "string", "example": "1985.50" },
+                  "exit_price": { "type": "string", "example": "1992.30" },
+                  "stop_loss": { "type": "string", "nullable": true },
+                  "take_profit": { "type": "string", "nullable": true },
+                  "lot_size": { "type": "string", "example": "0.50" },
+                  "entry_time": { "type": "string", "format": "date-time" },
+                  "exit_time": { "type": "string", "format": "date-time" },
+                  "strategy_id": { "type": "string", "format": "uuid", "nullable": true },
+                  "session": { "$ref": "#/components/schemas/TradeSession" },
+                  "notes": { "type": "string", "nullable": true },
+                  "tags": { "type": "array", "items": { "type": "string" }, "maxItems": 20 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Trade logged, risk engine updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "trade": { "$ref": "#/components/schemas/Trade" },
+                        "risk_status": { "$ref": "#/components/schemas/RiskStatus" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "422": { "$ref": "#/components/responses/422ValidationError" }
+        }
+      }
+    },
+    "/trades/{id}": {
+      "get": {
+        "tags": ["Trades"],
+        "summary": "Get trade detail",
+        "operationId": "getTrade",
+        "parameters": [ { "$ref": "#/components/parameters/TradeId" } ],
+        "responses": {
+          "200": {
+            "description": "Trade detail with images",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/Trade" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Trades"],
+        "summary": "Update a trade",
+        "description": "Full update of trade fields. Triggers risk engine recalculation.",
+        "operationId": "updateTrade",
+        "parameters": [ { "$ref": "#/components/parameters/TradeId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbol": { "type": "string" },
+                  "direction": { "$ref": "#/components/schemas/TradeDirection" },
+                  "entry_price": { "type": "string" },
+                  "exit_price": { "type": "string" },
+                  "stop_loss": { "type": "string", "nullable": true },
+                  "take_profit": { "type": "string", "nullable": true },
+                  "lot_size": { "type": "string" },
+                  "entry_time": { "type": "string", "format": "date-time" },
+                  "exit_time": { "type": "string", "format": "date-time" },
+                  "strategy_id": { "type": "string", "format": "uuid", "nullable": true },
+                  "session": { "$ref": "#/components/schemas/TradeSession" },
+                  "notes": { "type": "string", "nullable": true },
+                  "tags": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Trade updated, risk engine recalculated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "trade": { "$ref": "#/components/schemas/Trade" },
+                        "risk_status": { "$ref": "#/components/schemas/RiskStatus" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" },
+          "422": { "$ref": "#/components/responses/422ValidationError" }
+        }
+      },
+      "delete": {
+        "tags": ["Trades"],
+        "summary": "Delete (soft delete) a trade",
+        "operationId": "deleteTrade",
+        "parameters": [ { "$ref": "#/components/parameters/TradeId" } ],
+        "responses": {
+          "200": {
+            "description": "Trade deleted, risk engine recalculated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "message": { "type": "string" },
+                        "risk_status": { "$ref": "#/components/schemas/RiskStatus" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" }
+        }
+      }
+    },
+    "/trades/{id}/images": {
+      "get": {
+        "tags": ["Trade Images"],
+        "summary": "List images for a trade",
+        "operationId": "listTradeImages",
+        "parameters": [ { "$ref": "#/components/parameters/TradeId" } ],
+        "responses": {
+          "200": {
+            "description": "Trade image list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/TradeImageMeta" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" }
+        }
+      },
+      "post": {
+        "tags": ["Trade Images"],
+        "summary": "Upload image for a trade",
+        "operationId": "uploadTradeImage",
+        "parameters": [ { "$ref": "#/components/parameters/TradeId" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["image"],
+                "properties": {
+                  "image": { "type": "string", "format": "binary" },
+                  "label": { "type": "string", "maxLength": 100 },
+                  "sort_order": { "type": "integer", "minimum": 0 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Image uploaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/TradeImageMeta" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "File too large or unsupported format",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" }
+        }
+      }
+    },
+    "/images/{id}": {
+      "delete": {
+        "tags": ["Trade Images"],
+        "summary": "Delete a trade image",
+        "operationId": "deleteTradeImage",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "type": "object", "properties": { "message": { "type": "string" } } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" }
+        }
+      }
+    },
+    "/strategies": {
+      "get": {
+        "tags": ["Strategies"],
+        "summary": "List user strategies",
+        "operationId": "listStrategies",
+        "responses": {
+          "200": {
+            "description": "Strategy list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/Strategy" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Strategies"],
+        "summary": "Create a strategy",
+        "operationId": "createStrategy",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+                  "description": { "type": "string", "nullable": true },
+                  "color_hex": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "default": "#6366F1" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Strategy created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/Strategy" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "409": {
+            "description": "Strategy name already exists",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "422": { "$ref": "#/components/responses/422ValidationError" }
+        }
+      }
+    },
+    "/strategies/{id}": {
+      "put": {
+        "tags": ["Strategies"],
+        "summary": "Update a strategy",
+        "operationId": "updateStrategy",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": { "type": "string", "nullable": true },
+                  "color_hex": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Strategy updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/Strategy" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["Strategies"],
+        "summary": "Delete a strategy",
+        "operationId": "deleteStrategy",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Strategy deleted (trades unlinked)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "type": "object", "properties": { "message": { "type": "string" } } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" }
+        }
+      }
+    },
+    "/simulations/{id}/dashboard": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get simulation dashboard data",
+        "description": "Returns all data needed for the dashboard view: equity curve, daily PnL, calendar heatmap, statistics summary, and current risk status.",
+        "operationId": "getSimulationDashboard",
+        "parameters": [
+          { "$ref": "#/components/parameters/SimulationId" },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["ALL", "1M", "1W", "1D"], "default": "ALL" },
+            "description": "Time window for equity curve and daily PnL data"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/DashboardData" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" }
+        }
+      }
+    },
+    "/simulations/{id}/analytics": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Get simulation analytics",
+        "description": "Returns performance breakdown by symbol, session, strategy, day of week, drawdown analysis, and streak data.",
+        "operationId": "getSimulationAnalytics",
+        "parameters": [
+          { "$ref": "#/components/parameters/SimulationId" },
+          { "name": "date_from", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "date_to", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics breakdown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/AnalyticsData" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" }
+        }
+      }
+    },
+    "/templates": {
+      "get": {
+        "tags": ["Templates"],
+        "summary": "List challenge templates",
+        "description": "Returns all active system challenge templates for use when creating simulations.",
+        "operationId": "listTemplates",
+        "responses": {
+          "200": {
+            "description": "Template list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/ChallengeTemplate" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" }
+        }
+      }
+    },
+    "/tags/suggestions": {
+      "get": {
+        "tags": ["Trades"],
+        "summary": "Get tag autocomplete suggestions",
+        "operationId": "getTagSuggestions",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Partial tag string to match" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tag suggestions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "type": "array", "items": { "type": "string" }, "example": ["fomo", "revenge-trade", "high-conviction"] }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" }
+        }
+      }
+    }
+  }
+}
