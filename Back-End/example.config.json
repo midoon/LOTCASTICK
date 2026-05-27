@@ -1,0 +1,76 @@
+{
+  "app": {
+    "name": "lotcastick-backend"
+  },
+
+  "web": {
+    "prefork": false,
+    "port": 9000,
+    "host": "localhost"
+  },
+  "log": {
+    "level": 6
+  },
+  "database": {
+    "username": "",
+    "password": "",
+    "host": "localhost",
+    "port": 5432,
+    "name": "lotcastick_db",
+    "pool": {
+      "idle": 10,
+      "max": 100,
+      "lifetime": 300
+    }
+  },
+  "jwt": {
+    "secret": "lotcastick_secret_key",
+    "issuer": "lotcastick",
+    "expiration": 3600
+  },
+
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "password": "",
+    "db": 0
+  },
+  "midtrans": {
+    "server_key": "",
+    "client_key": "",
+    "is_production": false
+  },
+  "kafka": {
+    "bootstrap": {
+      "servers": "localhost:9092"
+    },
+    "group": {
+      "id": "golang-clean-architecture"
+    },
+    "auto": {
+      "offset": {
+        "reset": "earliest"
+      }
+    },
+    "producer": {
+      "enabled": false
+    }
+  },
+  "email": {
+    "smtp": {
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "username": "email@gmail.com",
+      "password": "",
+      "email": "email@gmail.com"
+    }
+  },
+  "plans": {
+    "default": "Free"
+  },
+  "services": {
+    "frontend": {
+      "url": "http://localhost:3000"
+    }
+  }
+}

@@ -69,3 +69,6 @@ logs/
 
 # Air live reloading
 tmp/
+
+
+config.json
