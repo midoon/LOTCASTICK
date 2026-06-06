@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"errors"
 	"lotcastick-backend/internal/model"
 
@@ -16,20 +17,20 @@ func NewUserRepository(db *gorm.DB) model.UserRepository {
 }
 
 // Delete implements [model.UserRepository].
-func (u *userRepository) Delete(id string) error {
-	return u.db.Where("id = ?", id).Update("deleted_at", gorm.Expr("NOW()")).Error
+func (u *userRepository) Delete(ctx context.Context, id string) error {
+	return u.db.WithContext(ctx).Where("id = ?", id).Update("deleted_at", gorm.Expr("NOW()")).Error
 }
 
 // HardDelete implements [model.UserRepository].
-func (u *userRepository) HardDelete(id string) error {
-	return u.db.Where("id = ?", id).Delete(&model.User{}).Error
+func (u *userRepository) HardDelete(ctx context.Context, id string) error {
+	return u.db.WithContext(ctx).Where("id = ?", id).Delete(&model.User{}).Error
 }
 
 // FindByEmail implements [model.UserRepository].
-func (u *userRepository) FindByEmail(email string) (*model.User, error) {
+func (u *userRepository) FindByEmail(ctx context.Context, email string) (*model.User, error) {
 	var user model.User
 
-	err := u.db.
+	err := u.db.WithContext(ctx).
 		Where("email = ?", email).Where("deleted_at IS NULL").
 		First(&user).
 		Error
@@ -45,10 +46,10 @@ func (u *userRepository) FindByEmail(email string) (*model.User, error) {
 }
 
 // FindByID implements [model.UserRepository].
-func (u *userRepository) FindByID(id string) (*model.User, error) {
+func (u *userRepository) FindByID(ctx context.Context, id string) (*model.User, error) {
 	var user model.User
 
-	err := u.db.
+	err := u.db.WithContext(ctx).
 		Where("id = ?", id).Where("deleted_at IS NULL").
 		First(&user).
 		Error
@@ -64,11 +65,11 @@ func (u *userRepository) FindByID(id string) (*model.User, error) {
 }
 
 // Store implements [model.UserRepository].
-func (u *userRepository) Store(user *model.User) error {
-	return u.db.Create(user).Error
+func (u *userRepository) Store(ctx context.Context, user *model.User) error {
+	return u.db.WithContext(ctx).Create(user).Error
 }
 
 // Update implements [model.UserRepository].
-func (u *userRepository) Update(user *model.User) error {
-	return u.db.Save(user).Error
+func (u *userRepository) Update(ctx context.Context, user *model.User) error {
+	return u.db.WithContext(ctx).Save(user).Error
 }

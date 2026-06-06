@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"context"
+	"lotcastick-backend/internal/dto"
+	"time"
+)
 
 type User struct {
 	ID              string     `gorm:"column:id;primaryKey" json:"id"`
@@ -21,18 +25,18 @@ func (u *User) TableName() string {
 }
 
 type UserRepository interface {
-	Store(user *User) error
-	FindByEmail(email string) (*User, error)
-	FindByID(id string) (*User, error)
-	Update(user *User) error
-	Delete(id string) error
-	HardDelete(id string) error
+	Store(ctx context.Context, user *User) error
+	FindByEmail(ctx context.Context, email string) (*User, error)
+	FindByID(ctx context.Context, id string) (*User, error)
+	Update(ctx context.Context, user *User) error
+	Delete(ctx context.Context, id string) error
+	HardDelete(ctx context.Context, id string) error
 }
 
 type UserUsecase interface {
-	Register(email, password, displayName, timezone, defaultCurrency string) (*User, error)
-	Login(email, password string) (*User, error)
-	GetProfile(userID string) (*User, error)
-	UpdateProfile(userID, displayName, timezone, defaultCurrency string) (*User, error)
-	DeleteAccount(userID string) error
+	Register(ctx context.Context, req dto.RegisterRequest) (*User, error)
+	Login(ctx context.Context, email, password string) (*User, error)
+	GetProfile(ctx context.Context, userID string) (*User, error)
+	UpdateProfile(ctx context.Context, userID, displayName, timezone, defaultCurrency string) (*User, error)
+	DeleteAccount(ctx context.Context, userID string) error
 }
