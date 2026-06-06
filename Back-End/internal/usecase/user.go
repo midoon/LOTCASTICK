@@ -6,17 +6,21 @@ import (
 	"lotcastick-backend/internal/model"
 	"lotcastick-backend/internal/util"
 	"net/http"
+	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/spf13/viper"
 )
 
 type userUsecase struct {
-	userRepo model.UserRepository
-	validate *validator.Validate
+	userRepo    model.UserRepository
+	tokenRepo   model.RefreshTokenRepository
+	validate    *validator.Validate
+	viperConfig *viper.Viper
 }
 
-func NewUserUsecase(userRepo model.UserRepository, validate *validator.Validate) model.UserUsecase {
-	return &userUsecase{userRepo: userRepo, validate: validate}
+func NewUserUsecase(userRepo model.UserRepository, tokenRepo model.RefreshTokenRepository, validate *validator.Validate, viperConfig *viper.Viper) model.UserUsecase {
+	return &userUsecase{userRepo: userRepo, tokenRepo: tokenRepo, validate: validate, viperConfig: viperConfig}
 }
 
 // Register implements [model.UserUsecase].
@@ -52,6 +56,71 @@ func (u *userUsecase) Register(ctx context.Context, req dto.RegisterRequest) err
 	return nil
 }
 
+// Login implements [model.UserUsecase].
+func (u *userUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.TokenData, error) {
+	if err := u.validate.Struct(req); err != nil {
+		return nil, util.NewCustomError(http.StatusBadRequest, "validation error", err)
+	}
+
+	//is user exists by email
+	user, err := u.userRepo.FindByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+	}
+	if user == nil {
+		return nil, util.NewCustomError(http.StatusUnauthorized, "invalid credentials", nil)
+	}
+	if !util.CompareHash(req.Password, user.PasswordHash) {
+		return nil, util.NewCustomError(http.StatusUnauthorized, "invalid credentials", nil)
+	}
+
+	// is JWT exist in DB
+	tokenExisting, err := u.tokenRepo.FindActiveByUserID(ctx, user.ID)
+	if err != nil {
+		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+	}
+
+	if len(tokenExisting) > 0 {
+		for _, t := range tokenExisting {
+			if err := u.tokenRepo.Revoke(ctx, t.ID); err != nil {
+				return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+			}
+		}
+	}
+
+	aToken, err := util.GenerateJWT(ctx, user.ID, u.viperConfig.GetInt64("jwt.expiration"), u.viperConfig.GetString("jwt.secret"))
+	if err != nil {
+		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+	}
+
+	rToken, err := util.GenerateJWT(ctx, user.ID, u.viperConfig.GetInt64("jwt.refresh_expiration"), u.viperConfig.GetString("jwt.secret"))
+	if err != nil {
+		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+	}
+
+	tokenHash, err := util.CreateHash(rToken)
+	if err != nil {
+		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+	}
+
+	refreshToken := &model.RefreshToken{
+		UserID:    user.ID,
+		TokenHash: tokenHash,
+		ExpiresAt: time.Now().Add(time.Duration(u.viperConfig.GetInt64("jwt.refresh_expiration")) * time.Second),
+	}
+
+	err = u.tokenRepo.Store(ctx, refreshToken)
+	if err != nil {
+		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+	}
+
+	return &dto.TokenData{
+		AccessToken:  aToken,
+		RefreshToken: rToken,
+	}, nil
+
+}
+
 // DeleteAccount implements [model.UserUsecase].
 func (u *userUsecase) DeleteAccount(ctx context.Context, userID string) error {
 	panic("unimplemented")
@@ -59,11 +128,6 @@ func (u *userUsecase) DeleteAccount(ctx context.Context, userID string) error {
 
 // GetProfile implements [model.UserUsecase].
 func (u *userUsecase) GetProfile(ctx context.Context, userID string) (*model.User, error) {
-	panic("unimplemented")
-}
-
-// Login implements [model.UserUsecase].
-func (u *userUsecase) Login(ctx context.Context, email string, password string) (*model.User, error) {
 	panic("unimplemented")
 }
 

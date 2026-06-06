@@ -17,3 +17,7 @@ untuk default_currency
 | British Pound     | `GBP` |
 
 ==============
+UNTUK MVP, 1 USER 1ID 1 REFRESH TOKEN
+- jika logout, maka refresh token akan direvoke
+
+==============

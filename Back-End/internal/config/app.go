@@ -26,7 +26,9 @@ type BootstrapConfig struct {
 func NewBootstrapConfig(bsConfig *BootstrapConfig) {
 
 	userRepo := repository.NewUserRepository(bsConfig.Database)
-	userUsecase := usecase.NewUserUsecase(userRepo, bsConfig.Validate)
+	tokenRepo := repository.NewRefreshTokenRepository(bsConfig.Database)
+
+	userUsecase := usecase.NewUserUsecase(userRepo, tokenRepo, bsConfig.Validate, bsConfig.ViperConfig)
 	userController := controller.NewUserController(userUsecase)
 
 	routeConfig := route.RouteConfig{
