@@ -4,6 +4,9 @@ import (
 	"context"
 	"lotcastick-backend/internal/dto"
 	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type User struct {
@@ -24,6 +27,11 @@ func (u *User) TableName() string {
 	return "users"
 }
 
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	u.ID = uuid.New().String()
+	return nil
+}
+
 type UserRepository interface {
 	Store(ctx context.Context, user *User) error
 	FindByEmail(ctx context.Context, email string) (*User, error)
@@ -34,7 +42,7 @@ type UserRepository interface {
 }
 
 type UserUsecase interface {
-	Register(ctx context.Context, req dto.RegisterRequest) (*User, error)
+	Register(ctx context.Context, req dto.RegisterRequest) error
 	Login(ctx context.Context, email, password string) (*User, error)
 	GetProfile(ctx context.Context, userID string) (*User, error)
 	UpdateProfile(ctx context.Context, userID, displayName, timezone, defaultCurrency string) (*User, error)

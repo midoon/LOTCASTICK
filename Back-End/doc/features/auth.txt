@@ -1,0 +1,19 @@
+==============
+Pada form registrasi untuk bagian timezone,
+itu diisi IANA
+(Asia/Jakarta),
+
+Bukan UTC+7
+==============
+untuk default_currency
+
+| Currency          | Code  |
+| ----------------- | ----- |
+| US Dollar         | `USD` |
+| Indonesian Rupiah | `IDR` |
+| Euro              | `EUR` |
+| Japanese Yen      | `JPY` |
+| Singapore Dollar  | `SGD` |
+| British Pound     | `GBP` |
+
+==============

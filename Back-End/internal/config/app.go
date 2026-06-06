@@ -1,7 +1,10 @@
 package config
 
 import (
+	"lotcastick-backend/internal/controller"
 	"lotcastick-backend/internal/delivery/http/route"
+	"lotcastick-backend/internal/repository"
+	"lotcastick-backend/internal/usecase"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -21,8 +24,14 @@ type BootstrapConfig struct {
 }
 
 func NewBootstrapConfig(bsConfig *BootstrapConfig) {
+
+	userRepo := repository.NewUserRepository(bsConfig.Database)
+	userUsecase := usecase.NewUserUsecase(userRepo, bsConfig.Validate)
+	userController := controller.NewUserController(userUsecase)
+
 	routeConfig := route.RouteConfig{
-		Router: bsConfig.Router,
+		Router:         bsConfig.Router,
+		UserController: userController,
 	}
 	routeConfig.SetupRoutes()
 }

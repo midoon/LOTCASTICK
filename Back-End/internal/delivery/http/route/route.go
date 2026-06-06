@@ -1,13 +1,15 @@
 package route
 
 import (
+	"lotcastick-backend/internal/controller"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
 type RouteConfig struct {
-	Router *mux.Router
+	Router         *mux.Router
+	UserController *controller.UserController
 }
 
 func (rc *RouteConfig) SetupRoutes() {
@@ -26,6 +28,8 @@ func (rc *RouteConfig) setupPublicRoutes(api *mux.Router) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Health route"))
 	}).Methods("GET")
+
+	api.HandleFunc("/register", rc.UserController.Register).Methods("POST")
 }
 
 func (rc *RouteConfig) setupPrivateRoutes(private *mux.Router) {

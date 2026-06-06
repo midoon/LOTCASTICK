@@ -1,6 +1,11 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
 
 type RefreshToken struct {
 	ID        string     `gorm:"column:id;primaryKey" json:"id"`
@@ -13,4 +18,9 @@ type RefreshToken struct {
 
 func (rt *RefreshToken) TableName() string {
 	return "refresh_tokens"
+}
+
+func (rt *RefreshToken) BeforeCreate(tx *gorm.DB) (err error) {
+	rt.ID = uuid.New().String()
+	return nil
 }

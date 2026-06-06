@@ -15,28 +15,28 @@ type userUsecase struct {
 	validate *validator.Validate
 }
 
-func NewUserUsecase(userRepo model.UserRepository) model.UserUsecase {
-	return &userUsecase{userRepo: userRepo, validate: validator.New()}
+func NewUserUsecase(userRepo model.UserRepository, validate *validator.Validate) model.UserUsecase {
+	return &userUsecase{userRepo: userRepo, validate: validate}
 }
 
 // Register implements [model.UserUsecase].
-func (u *userUsecase) Register(ctx context.Context, req dto.RegisterRequest) (*model.User, error) {
+func (u *userUsecase) Register(ctx context.Context, req dto.RegisterRequest) error {
 	if err := u.validate.Struct(req); err != nil {
-		return nil, util.NewCustomError(http.StatusBadRequest, "validation error", err)
+		return util.NewCustomError(http.StatusBadRequest, "validation error", err)
 	}
 
 	isExisting, err := u.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+		return util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
 	}
 
 	if isExisting != nil {
-		return nil, util.NewCustomError(http.StatusConflict, "email already exists", nil)
+		return util.NewCustomError(http.StatusConflict, "email already exists", nil)
 	}
 
 	hashedPassword, err := util.CreateHash(req.Password)
 	if err != nil {
-		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+		return util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
 	}
 	user := &model.User{
 		Email:           req.Email,
@@ -45,7 +45,11 @@ func (u *userUsecase) Register(ctx context.Context, req dto.RegisterRequest) (*m
 		Timezone:        req.Timezone,
 		DefaultCurrency: req.DefaultCurrency,
 	}
-	return user, nil
+
+	if err := u.userRepo.Store(ctx, user); err != nil {
+		return util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+	}
+	return nil
 }
 
 // DeleteAccount implements [model.UserUsecase].
