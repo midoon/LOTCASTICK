@@ -30,6 +30,7 @@ func (rc *RouteConfig) setupPublicRoutes(api *mux.Router) {
 	}).Methods("GET")
 
 	api.HandleFunc("/register", rc.UserController.Register).Methods("POST")
+	api.HandleFunc("/login", rc.UserController.Login).Methods("POST")
 }
 
 func (rc *RouteConfig) setupPrivateRoutes(private *mux.Router) {

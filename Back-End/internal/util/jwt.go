@@ -1,38 +1,116 @@
 package util
 
 import (
-	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
-func GenerateJWT(ctx context.Context, userID string, exp int64, secret string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": userID,
-		"exp":     exp,
-	})
+type AccessTokenClaims struct {
+	UserID string `json:"user_id"`
+	jwt.RegisteredClaims
+}
+
+type RefreshTokenClaims struct {
+	UserID string `json:"user_id"`
+	jwt.RegisteredClaims
+}
+
+func GenerateAccessToken(
+	userID string,
+	expiration time.Duration,
+	secret string,
+) (string, error) {
+
+	claims := AccessTokenClaims{
+		UserID: userID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiration)),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
 	return token.SignedString([]byte(secret))
 }
 
-func ParseJWT(ctx context.Context, tokenStr string, secret string) (string, error) {
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(secret), nil
-	})
+func GenerateRefreshToken(
+	userID string,
+	expiration time.Duration,
+	secret string,
+) (string, error) {
+
+	claims := RefreshTokenClaims{
+		UserID: userID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        uuid.NewString(), // jti
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiration)),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	return token.SignedString([]byte(secret))
+}
+
+func ParseAccessToken(
+	tokenStr string,
+	secret string,
+) (*AccessTokenClaims, error) {
+
+	claims := &AccessTokenClaims{}
+
+	token, err := jwt.ParseWithClaims(
+		tokenStr,
+		claims,
+		func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(secret), nil
+		},
+	)
 
 	if err != nil {
-		return "", err
-	}
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		if id, ok := claims["id"].(string); ok {
-			return id, nil
-		}
-
-		return "", fmt.Errorf("id claim not found or invalid")
+		return nil, err
 	}
 
-	return "", fmt.Errorf("invalid token")
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+
+	return claims, nil
+}
+
+func ParseRefreshToken(
+	tokenStr string,
+	secret string,
+) (*RefreshTokenClaims, error) {
+
+	claims := &RefreshTokenClaims{}
+
+	token, err := jwt.ParseWithClaims(
+		tokenStr,
+		claims,
+		func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(secret), nil
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+
+	return claims, nil
 }

@@ -70,7 +70,7 @@ func (u *userUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Tok
 	if user == nil {
 		return nil, util.NewCustomError(http.StatusUnauthorized, "invalid credentials", nil)
 	}
-	if !util.CompareHash(req.Password, user.PasswordHash) {
+	if !util.CompareHash(user.PasswordHash, req.Password) {
 		return nil, util.NewCustomError(http.StatusUnauthorized, "invalid credentials", nil)
 	}
 
@@ -88,20 +88,17 @@ func (u *userUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Tok
 		}
 	}
 
-	aToken, err := util.GenerateJWT(ctx, user.ID, u.viperConfig.GetInt64("jwt.expiration"), u.viperConfig.GetString("jwt.secret"))
+	aToken, err := util.GenerateAccessToken(user.ID, time.Duration(u.viperConfig.GetInt64("jwt.expiration"))*time.Second, u.viperConfig.GetString("jwt.secret"))
 	if err != nil {
 		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
 	}
 
-	rToken, err := util.GenerateJWT(ctx, user.ID, u.viperConfig.GetInt64("jwt.refresh_expiration"), u.viperConfig.GetString("jwt.secret"))
+	rToken, err := util.GenerateRefreshToken(user.ID, time.Duration(u.viperConfig.GetInt64("jwt.refresh_expiration"))*time.Second, u.viperConfig.GetString("jwt.secret"))
 	if err != nil {
 		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
 	}
 
-	tokenHash, err := util.CreateHash(rToken)
-	if err != nil {
-		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
-	}
+	tokenHash := util.CreateTokenHash(rToken)
 
 	refreshToken := &model.RefreshToken{
 		UserID:    user.ID,
@@ -115,6 +112,7 @@ func (u *userUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Tok
 	}
 
 	return &dto.TokenData{
+		UserID:       user.ID,
 		AccessToken:  aToken,
 		RefreshToken: rToken,
 	}, nil
