@@ -34,6 +34,7 @@ func NewBootstrapConfig(bsConfig *BootstrapConfig) {
 	routeConfig := route.RouteConfig{
 		Router:         bsConfig.Router,
 		UserController: userController,
+		JwtsecretKey:   bsConfig.ViperConfig.GetString("jwt.secret"),
 	}
 	routeConfig.SetupRoutes()
 }

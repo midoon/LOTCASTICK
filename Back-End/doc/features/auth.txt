@@ -21,3 +21,13 @@ UNTUK MVP, 1 USER 1ID 1 REFRESH TOKEN
 - jika logout, maka refresh token akan direvoke
 
 ==============
+
+Praktiknya untuk kasus auth mddleware ketika user logout:
+
+User normal tidak bisa akses lagi karena token sudah dihapus browser.
+Jika ada attacker yang sudah mencuri access token, dia hanya punya waktu maksimal 15 menit.
+Setelah itu tidak bisa refresh karena refresh token sudah direvoke.
+
+Untuk MVP, ini trade-off yang sangat wajar dan banyak dipakai. Kalau nanti aplikasi sudah berkembang dan ada kebutuhan "logout harus langsung memutus semua sesi", baru pertimbangkan token version atau blacklist dengan Redis.
+
+==============

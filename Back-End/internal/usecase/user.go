@@ -119,6 +119,20 @@ func (u *userUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Tok
 
 }
 
+func (u *userUsecase) Logout(ctx context.Context, userID string) error {
+	// Revoke all active tokens for the user
+	tokenExisting, err := u.tokenRepo.FindActiveByUserID(ctx, userID)
+	if err != nil {
+		return util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+	}
+	for _, t := range tokenExisting {
+		if err := u.tokenRepo.Revoke(ctx, t.ID); err != nil {
+			return util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+		}
+	}
+	return nil
+}
+
 // DeleteAccount implements [model.UserUsecase].
 func (u *userUsecase) DeleteAccount(ctx context.Context, userID string) error {
 	panic("unimplemented")

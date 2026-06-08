@@ -86,3 +86,38 @@ func (c *UserController) Login(w http.ResponseWriter, r *http.Request) {
 		Data:    *tokenData,
 	})
 }
+
+func (c *UserController) Logout(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := r.Context().Value("userID").(string)
+	if userID == "" {
+		util.WriteJSON(w, http.StatusUnauthorized, dto.ErrorResponse{
+			Status:  false,
+			Message: "Unauthorized",
+			Error:   "User ID not found in context",
+		})
+		return
+	}
+
+	if err := c.userUsecase.Logout(ctx, userID); err != nil {
+		if customErr, ok := err.(*util.CustomError); ok {
+			util.WriteJSON(w, customErr.Code, dto.ErrorResponse{
+				Status:  false,
+				Message: customErr.Message,
+				Error:   customErr.Error(),
+			})
+			return
+		}
+		util.WriteJSON(w, http.StatusInternalServerError, dto.ErrorResponse{
+			Status:  false,
+			Message: "Internal server error",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	util.WriteJSON(w, http.StatusOK, dto.MessageResponse{
+		Status:  true,
+		Message: "Logout successful",
+	})
+}

@@ -26,7 +26,8 @@
   "jwt": {
     "secret": "lotcastick_secret_key",
     "issuer": "lotcastick",
-    "expiration": 3600
+    "expiration": 900,
+    "refresh_expiration": 2592000
   },
 
   "redis": {

@@ -2,6 +2,7 @@ package route
 
 import (
 	"lotcastick-backend/internal/controller"
+	"lotcastick-backend/internal/delivery/http/middleware"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -10,6 +11,7 @@ import (
 type RouteConfig struct {
 	Router         *mux.Router
 	UserController *controller.UserController
+	JwtsecretKey   string
 }
 
 func (rc *RouteConfig) SetupRoutes() {
@@ -17,10 +19,12 @@ func (rc *RouteConfig) SetupRoutes() {
 
 	rc.setupPublicRoutes(api)
 
-	// private := api.PathPrefix("").Subrouter()
-	// private.Use(AuthMiddleware)
+	private := api.PathPrefix("").Subrouter()
+	private.Use(func(next http.Handler) http.Handler {
+		return middleware.AuthMiddleware(next, rc.JwtsecretKey)
+	})
 
-	// rc.setupPrivateRoutes(private)
+	rc.setupPrivateRoutes(private)
 }
 
 func (rc *RouteConfig) setupPublicRoutes(api *mux.Router) {
@@ -34,5 +38,5 @@ func (rc *RouteConfig) setupPublicRoutes(api *mux.Router) {
 }
 
 func (rc *RouteConfig) setupPrivateRoutes(private *mux.Router) {
-
+	private.HandleFunc("/logout", rc.UserController.Logout).Methods("POST")
 }
