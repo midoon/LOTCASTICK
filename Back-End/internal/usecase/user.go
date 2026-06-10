@@ -115,6 +115,7 @@ func (u *userUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Tok
 		UserID:       user.ID,
 		AccessToken:  aToken,
 		RefreshToken: rToken,
+		ExpiresIn:    u.viperConfig.GetInt64("jwt.expiration"),
 	}, nil
 
 }

@@ -10,18 +10,12 @@
     }
   },
   "servers": [
-    {
-      "url": "https://api.tradejournal.io/v1",
-      "description": "Production"
-    },
+    { "url": "https://api.tradejournal.io/v1", "description": "Production" },
     {
       "url": "https://api.staging.tradejournal.io/v1",
       "description": "Staging"
     },
-    {
-      "url": "http://localhost:8080/v1",
-      "description": "Local Development"
-    }
+    { "url": "http://localhost:8080/v1", "description": "Local Development" }
   ],
   "tags": [
     { "name": "Auth", "description": "Authentication and session management" },
@@ -50,60 +44,34 @@
       }
     },
     "schemas": {
+      "MessageResponse": {
+        "type": "object",
+        "required": ["status", "message"],
+        "properties": {
+          "status": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "Operation successful" }
+        }
+      },
       "ErrorResponse": {
         "type": "object",
-        "required": ["success", "error"],
+        "required": ["status", "message"],
         "properties": {
-          "success": { "type": "boolean", "example": false },
+          "status": { "type": "boolean", "example": false },
+          "message": { "type": "string", "example": "Validation failed" },
           "error": {
-            "type": "object",
-            "required": ["code", "message"],
-            "properties": {
-              "code": {
-                "type": "string",
-                "example": "VALIDATION_ERROR",
-                "description": "Machine-readable error code"
-              },
-              "message": {
-                "type": "string",
-                "example": "Validation failed",
-                "description": "Human-readable summary"
-              },
-              "details": {
-                "type": "array",
-                "description": "Field-level validation errors (present only for 422)",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "field": { "type": "string", "example": "email" },
-                    "message": {
-                      "type": "string",
-                      "example": "must be a valid email address"
-                    }
-                  }
-                }
-              }
-            }
+            "type": "string",
+            "example": "email: must be a valid email address",
+            "description": "Optional error detail string. Omitted when empty."
           }
         }
       },
-      "PaginationMeta": {
+      "PageMetadata": {
         "type": "object",
         "properties": {
           "page": { "type": "integer", "example": 1 },
-          "per_page": { "type": "integer", "example": 50 },
+          "size": { "type": "integer", "example": 50 },
           "total_items": { "type": "integer", "example": 248 },
-          "total_pages": { "type": "integer", "example": 5 },
-          "has_next": { "type": "boolean", "example": true },
-          "has_prev": { "type": "boolean", "example": false }
-        }
-      },
-      "SuccessResponse": {
-        "type": "object",
-        "required": ["success", "data"],
-        "properties": {
-          "success": { "type": "boolean", "example": true },
-          "data": { "type": "object" }
+          "total_pages": { "type": "integer", "example": 5 }
         }
       },
       "UserProfile": {
@@ -120,6 +88,7 @@
       "AuthTokens": {
         "type": "object",
         "properties": {
+          "user_id": { "type": "string", "format": "uuid" },
           "access_token": {
             "type": "string",
             "description": "JWT access token (1 hour expiry)"
@@ -287,10 +256,7 @@
           }
         }
       },
-      "TradeDirection": {
-        "type": "string",
-        "enum": ["LONG", "SHORT"]
-      },
+      "TradeDirection": { "type": "string", "enum": ["LONG", "SHORT"] },
       "TradeSession": {
         "type": "string",
         "enum": ["ASIA", "LONDON", "NEW_YORK", "OVERLAP"]
@@ -556,7 +522,7 @@
         "schema": { "type": "integer", "minimum": 1, "default": 1 }
       },
       "PerPageParam": {
-        "name": "per_page",
+        "name": "size",
         "in": "query",
         "schema": {
           "type": "integer",
@@ -573,11 +539,9 @@
           "application/json": {
             "schema": { "$ref": "#/components/schemas/ErrorResponse" },
             "example": {
-              "success": false,
-              "error": {
-                "code": "UNAUTHORIZED",
-                "message": "Invalid or expired token"
-              }
+              "status": false,
+              "message": "Unauthorized",
+              "error": "Invalid or expired token"
             }
           }
         }
@@ -586,7 +550,12 @@
         "description": "Authenticated but not authorized to access this resource",
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": {
+              "status": false,
+              "message": "Forbidden",
+              "error": "You do not have access to this resource"
+            }
           }
         }
       },
@@ -596,8 +565,9 @@
           "application/json": {
             "schema": { "$ref": "#/components/schemas/ErrorResponse" },
             "example": {
-              "success": false,
-              "error": { "code": "NOT_FOUND", "message": "Resource not found" }
+              "status": false,
+              "message": "Not found",
+              "error": "Resource not found"
             }
           }
         }
@@ -608,21 +578,9 @@
           "application/json": {
             "schema": { "$ref": "#/components/schemas/ErrorResponse" },
             "example": {
-              "success": false,
-              "error": {
-                "code": "VALIDATION_ERROR",
-                "message": "Validation failed",
-                "details": [
-                  {
-                    "field": "email",
-                    "message": "must be a valid email address"
-                  },
-                  {
-                    "field": "password",
-                    "message": "must be at least 8 characters"
-                  }
-                ]
-              }
+              "status": false,
+              "message": "Validation failed",
+              "error": "email: must be a valid email address; password: must be at least 8 characters"
             }
           }
         }
@@ -679,13 +637,10 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "user": { "$ref": "#/components/schemas/UserProfile" },
-                        "tokens": { "$ref": "#/components/schemas/AuthTokens" }
-                      }
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "User registered successfully"
                     }
                   }
                 }
@@ -698,11 +653,9 @@
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" },
                 "example": {
-                  "success": false,
-                  "error": {
-                    "code": "EMAIL_TAKEN",
-                    "message": "Email is already registered"
-                  }
+                  "status": false,
+                  "message": "Registration failed",
+                  "error": "Email is already registered"
                 }
               }
             }
@@ -740,11 +693,14 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Login successful"
+                    },
                     "data": {
                       "type": "object",
                       "properties": {
-                        "user": { "$ref": "#/components/schemas/UserProfile" },
                         "tokens": { "$ref": "#/components/schemas/AuthTokens" }
                       }
                     }
@@ -757,7 +713,12 @@
             "description": "Invalid credentials or account locked",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": {
+                  "status": false,
+                  "message": "Login failed",
+                  "error": "Invalid email or password"
+                }
               }
             }
           },
@@ -770,39 +731,15 @@
         "tags": ["Auth"],
         "summary": "Logout and revoke refresh token",
         "operationId": "authLogout",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["refresh_token"],
-                "properties": {
-                  "refresh_token": { "type": "string" }
-                }
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Logged out successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "message": {
-                          "type": "string",
-                          "example": "Logged out successfully"
-                        }
-                      }
-                    }
-                  }
+                "schema": { "$ref": "#/components/schemas/MessageResponse" },
+                "example": {
+                  "status": true,
+                  "message": "Logged out successfully"
                 }
               }
             }
@@ -839,7 +776,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Token refreshed successfully"
+                    },
                     "data": { "$ref": "#/components/schemas/AuthTokens" }
                   }
                 }
@@ -863,7 +804,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "User profile retrieved"
+                    },
                     "data": { "$ref": "#/components/schemas/UserProfile" }
                   }
                 }
@@ -907,7 +852,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Profile updated successfully"
+                    },
                     "data": { "$ref": "#/components/schemas/UserProfile" }
                   }
                 }
@@ -958,21 +907,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Simulations retrieved"
+                    },
                     "data": {
-                      "type": "object",
-                      "properties": {
-                        "items": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/SimulationSummary"
-                          }
-                        },
-                        "pagination": {
-                          "$ref": "#/components/schemas/PaginationMeta"
-                        }
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SimulationSummary"
                       }
-                    }
+                    },
+                    "metadata": { "$ref": "#/components/schemas/PageMetadata" }
                   }
                 }
               }
@@ -1022,7 +968,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Simulation created successfully"
+                    },
                     "data": { "$ref": "#/components/schemas/SimulationDetail" }
                   }
                 }
@@ -1048,7 +998,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Simulation retrieved"
+                    },
                     "data": { "$ref": "#/components/schemas/SimulationDetail" }
                   }
                 }
@@ -1092,7 +1046,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Simulation updated successfully"
+                    },
                     "data": { "$ref": "#/components/schemas/SimulationDetail" }
                   }
                 }
@@ -1115,20 +1073,10 @@
             "description": "Simulation soft-deleted",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "message": {
-                          "type": "string",
-                          "example": "Simulation scheduled for deletion in 30 days"
-                        }
-                      }
-                    }
-                  }
+                "schema": { "$ref": "#/components/schemas/MessageResponse" },
+                "example": {
+                  "status": true,
+                  "message": "Simulation scheduled for deletion in 30 days"
                 }
               }
             }
@@ -1211,19 +1159,16 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Trades retrieved"
+                    },
                     "data": {
-                      "type": "object",
-                      "properties": {
-                        "items": {
-                          "type": "array",
-                          "items": { "$ref": "#/components/schemas/Trade" }
-                        },
-                        "pagination": {
-                          "$ref": "#/components/schemas/PaginationMeta"
-                        }
-                      }
-                    }
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Trade" }
+                    },
+                    "metadata": { "$ref": "#/components/schemas/PageMetadata" }
                   }
                 }
               }
@@ -1292,7 +1237,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Trade logged successfully"
+                    },
                     "data": {
                       "type": "object",
                       "properties": {
@@ -1328,7 +1277,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Trade retrieved"
+                    },
                     "data": { "$ref": "#/components/schemas/Trade" }
                   }
                 }
@@ -1385,7 +1338,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Trade updated successfully"
+                    },
                     "data": {
                       "type": "object",
                       "properties": {
@@ -1419,16 +1376,12 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "message": { "type": "string" },
-                        "risk_status": {
-                          "$ref": "#/components/schemas/RiskStatus"
-                        }
-                      }
-                    }
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Trade deleted successfully"
+                    },
+                    "data": { "$ref": "#/components/schemas/RiskStatus" }
                   }
                 }
               }
@@ -1454,7 +1407,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Images retrieved"
+                    },
                     "data": {
                       "type": "array",
                       "items": { "$ref": "#/components/schemas/TradeImageMeta" }
@@ -1497,7 +1454,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Image uploaded successfully"
+                    },
                     "data": { "$ref": "#/components/schemas/TradeImageMeta" }
                   }
                 }
@@ -1508,7 +1469,12 @@
             "description": "File too large or unsupported format",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": {
+                  "status": false,
+                  "message": "Upload failed",
+                  "error": "File too large or unsupported format"
+                }
               }
             }
           },
@@ -1535,15 +1501,10 @@
             "description": "Image deleted",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "data": {
-                      "type": "object",
-                      "properties": { "message": { "type": "string" } }
-                    }
-                  }
+                "schema": { "$ref": "#/components/schemas/MessageResponse" },
+                "example": {
+                  "status": true,
+                  "message": "Image deleted successfully"
                 }
               }
             }
@@ -1567,7 +1528,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Strategies retrieved"
+                    },
                     "data": {
                       "type": "array",
                       "items": { "$ref": "#/components/schemas/Strategy" }
@@ -1616,7 +1581,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Strategy created successfully"
+                    },
                     "data": { "$ref": "#/components/schemas/Strategy" }
                   }
                 }
@@ -1628,7 +1597,12 @@
             "description": "Strategy name already exists",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": {
+                  "status": false,
+                  "message": "Strategy creation failed",
+                  "error": "Strategy name already exists"
+                }
               }
             }
           },
@@ -1675,7 +1649,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Strategy updated successfully"
+                    },
                     "data": { "$ref": "#/components/schemas/Strategy" }
                   }
                 }
@@ -1704,15 +1682,10 @@
             "description": "Strategy deleted (trades unlinked)",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "data": {
-                      "type": "object",
-                      "properties": { "message": { "type": "string" } }
-                    }
-                  }
+                "schema": { "$ref": "#/components/schemas/MessageResponse" },
+                "example": {
+                  "status": true,
+                  "message": "Strategy deleted successfully"
                 }
               }
             }
@@ -1750,7 +1723,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Dashboard data retrieved"
+                    },
                     "data": { "$ref": "#/components/schemas/DashboardData" }
                   }
                 }
@@ -1790,7 +1767,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Analytics retrieved"
+                    },
                     "data": { "$ref": "#/components/schemas/AnalyticsData" }
                   }
                 }
@@ -1817,7 +1798,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Templates retrieved"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
@@ -1854,7 +1839,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Tag suggestions retrieved"
+                    },
                     "data": {
                       "type": "array",
                       "items": { "type": "string" },

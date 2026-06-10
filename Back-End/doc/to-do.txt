@@ -1,0 +1,2 @@
+=== 01-doc\04-openapi-spec-v2.json ===
+1. pengecekkan masih sampai di auth 
