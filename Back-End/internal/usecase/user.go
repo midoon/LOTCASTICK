@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"lotcastick-backend/internal/dto"
 	"lotcastick-backend/internal/model"
 	"lotcastick-backend/internal/util"
@@ -132,6 +133,66 @@ func (u *userUsecase) Logout(ctx context.Context, userID string) error {
 		}
 	}
 	return nil
+}
+
+func (u *userUsecase) RefreshToken(ctx context.Context, req dto.RefreshTokenRequest) (*dto.TokenData, error) {
+	if err := u.validate.Struct(req); err != nil {
+		return nil, util.NewCustomError(http.StatusBadRequest, "validation error", err)
+	}
+
+	rtClaims, err := util.ParseRefreshToken(req.RefreshToken, u.viperConfig.GetString("jwt.secret"))
+	if err != nil {
+		return nil, util.NewCustomError(http.StatusUnauthorized, "invalid refresh token", err)
+	}
+
+	userID := rtClaims.UserID
+
+	rtTokenActive, err := u.tokenRepo.FindActiveByUserID(ctx, userID)
+	if err != nil {
+		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+	}
+	if len(rtTokenActive) == 0 {
+		return nil, util.NewCustomError(http.StatusUnauthorized, "invalid refresh token", nil)
+	}
+
+	// memasukkan token yang digunakan untuk refresh token ke dalam matchedToken
+	var matchedToken *model.RefreshToken
+	for _, t := range rtTokenActive {
+		if util.CompareTokenHash(t.TokenHash, req.RefreshToken) {
+			matchedToken = t
+			break
+		}
+	}
+
+	if matchedToken == nil {
+		fmt.Println("Refresh token reuse detected for user ID:", userID)
+		// token tidak ada di list aktif → revoke semua (reuse detection)
+		for _, t := range rtTokenActive {
+			_ = u.tokenRepo.Revoke(ctx, t.ID)
+		}
+		return nil, util.NewCustomError(http.StatusUnauthorized, "invalid refresh token", nil)
+	}
+
+	// jika ada token yang aktif, dan lebih dari satu yang aktif, maka revoke semua token yang aktif kecuali token yang digunakan untuk refresh token
+	for _, t := range rtTokenActive {
+		if t.ID != matchedToken.ID {
+			if err := u.tokenRepo.Revoke(ctx, t.ID); err != nil {
+				return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+			}
+		}
+	}
+
+	accessToken, err := util.GenerateAccessToken(userID, time.Duration(u.viperConfig.GetInt64("jwt.expiration"))*time.Second, u.viperConfig.GetString("jwt.secret"))
+	if err != nil {
+		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+	}
+
+	return &dto.TokenData{
+		UserID:       userID,
+		AccessToken:  accessToken,
+		RefreshToken: req.RefreshToken,
+		ExpiresIn:    u.viperConfig.GetInt64("jwt.expiration"),
+	}, nil
 }
 
 // DeleteAccount implements [model.UserUsecase].

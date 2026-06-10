@@ -24,3 +24,7 @@ func CreateTokenHash(token string) string {
 	hash := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(hash[:])
 }
+
+func CompareTokenHash(hash, token string) bool {
+	return hash == CreateTokenHash(token)
+}

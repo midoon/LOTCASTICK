@@ -45,6 +45,7 @@ type UserUsecase interface {
 	Register(ctx context.Context, req dto.RegisterRequest) error
 	Login(ctx context.Context, req dto.LoginRequest) (*dto.TokenData, error)
 	Logout(ctx context.Context, userID string) error
+	RefreshToken(ctx context.Context, req dto.RefreshTokenRequest) (*dto.TokenData, error)
 	GetProfile(ctx context.Context, userID string) (*User, error)
 	UpdateProfile(ctx context.Context, userID, displayName, timezone, defaultCurrency string) (*User, error)
 	DeleteAccount(ctx context.Context, userID string) error

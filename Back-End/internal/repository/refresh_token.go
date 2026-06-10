@@ -16,6 +16,12 @@ type refreshTokenRepository struct {
 func (r *refreshTokenRepository) FindActiveByUserID(ctx context.Context, userID string) ([]*model.RefreshToken, error) {
 	var tokens []*model.RefreshToken
 	err := r.db.WithContext(ctx).Where("user_id = ? AND revoked_at IS NULL AND expires_at > ?", userID, time.Now()).Find(&tokens).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
 	return tokens, err
 }
 
@@ -23,6 +29,12 @@ func (r *refreshTokenRepository) FindActiveByUserID(ctx context.Context, userID 
 func (r *refreshTokenRepository) FindByUserID(ctx context.Context, userID string) ([]*model.RefreshToken, error) {
 	var tokens []*model.RefreshToken
 	err := r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&tokens).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
 	return tokens, err
 }
 
