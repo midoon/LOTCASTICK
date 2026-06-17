@@ -1,1 +1,75 @@
 @import "tailwindcss";
+
+@theme {
+  /* Primary — navy-black, dipakai di tombol & dark stat card */
+  --color-primary-50: #f5f4f8;
+  --color-primary-100: #e8e7ef;
+  --color-primary-200: #d1cede;
+  --color-primary-300: #aea9c6;
+  --color-primary-400: #857fa9;
+  --color-primary-500: #615a87;
+  --color-primary-600: #464162;
+  --color-primary-700: #302d43;
+  --color-primary-800: #201e2c;
+  --color-primary-900: #15141e;
+  --color-primary-950: #0b0a0f;
+
+  /* Neutral — background, border, dan teks */
+  --color-neutral-50: #f6f6f6;
+  --color-neutral-100: #ededee;
+  --color-neutral-200: #d8d8da;
+  --color-neutral-300: #bcbbbf;
+  --color-neutral-400: #97969c;
+  --color-neutral-500: #76747b;
+  --color-neutral-600: #5a595f;
+  --color-neutral-700: #444347;
+  --color-neutral-800: #2b2a2d;
+  --color-neutral-900: #0f0f10;
+
+  /* Success — badge tren naik / indikator positif */
+  --color-success-50: #edfdf6;
+  --color-success-100: #d2f9e9;
+  --color-success-200: #a5f3d4;
+  --color-success-300: #6fecba;
+  --color-success-400: #39e4a0;
+  --color-success-500: #1ccf88;
+  --color-success-600: #17ab70;
+  --color-success-700: #128758;
+  --color-success-800: #0d6341;
+  --color-success-900: #09432c;
+
+  /* Gold — aksen token (ikon BUSD) */
+  --color-gold-50: #fdf9ed;
+  --color-gold-100: #f9f0d2;
+  --color-gold-200: #f3e0a5;
+  --color-gold-300: #ecce6e;
+  --color-gold-400: #e7be41;
+  --color-gold-500: #d9ab1c;
+  --color-gold-600: #b08b17;
+  --color-gold-700: #8c6e12;
+  --color-gold-800: #68520d;
+  --color-gold-900: #483909;
+}
+
+@layer base {
+  body {
+    @apply bg-neutral-50 text-neutral-900 antialiased;
+  }
+}
+
+@layer utilities {
+  /* Animasi pulse ringan untuk indikator realtime (mis. countdown rebase) */
+  .pulse-dot {
+    animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+}
