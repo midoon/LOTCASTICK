@@ -1,0 +1,1254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TradeSim — Prop Firm Challenge Simulator</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                50: "#f5f4f8",
+                100: "#e8e7ef",
+                200: "#d1cede",
+                300: "#aea9c6",
+                400: "#857fa9",
+                500: "#615a87",
+                600: "#464162",
+                700: "#302d43",
+                800: "#201e2c",
+                900: "#15141e",
+                950: "#0b0a0f",
+              },
+              neutral: {
+                50: "#f6f6f6",
+                100: "#ededee",
+                200: "#d8d8da",
+                300: "#bcbbbf",
+                400: "#97969c",
+                500: "#76747b",
+                600: "#5a595f",
+                700: "#444347",
+                800: "#2b2a2d",
+                900: "#0f0f10",
+              },
+              success: {
+                50: "#edfdf6",
+                100: "#d2f9e9",
+                200: "#a5f3d4",
+                300: "#6fecba",
+                400: "#39e4a0",
+                500: "#1ccf88",
+                600: "#17ab70",
+                700: "#128758",
+                800: "#0d6341",
+                900: "#09432c",
+              },
+              gold: {
+                50: "#fdf9ed",
+                100: "#f9f0d2",
+                200: "#f3e0a5",
+                300: "#ecce6e",
+                400: "#e7be41",
+                500: "#d9ab1c",
+                600: "#b08b17",
+                700: "#8c6e12",
+                800: "#68520d",
+                900: "#483909",
+              },
+            },
+            fontFamily: {
+              sans: ['"Inter"', "system-ui", "sans-serif"],
+              mono: ['"JetBrains Mono"', "monospace"],
+            },
+            keyframes: {
+              "pulse-dot": {
+                "0%, 100%": { opacity: "1" },
+                "50%": { opacity: "0.4" },
+              },
+              "fade-up": {
+                "0%": { opacity: "0", transform: "translateY(24px)" },
+                "100%": { opacity: "1", transform: "translateY(0)" },
+              },
+              tick: {
+                "0%": { transform: "translateY(0)" },
+                "50%": { transform: "translateY(-2px)" },
+                "100%": { transform: "translateY(0)" },
+              },
+            },
+            animation: {
+              "pulse-dot": "pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+              "fade-up": "fade-up 0.7s ease both",
+              "fade-up-delay": "fade-up 0.7s 0.15s ease both",
+              "fade-up-delay2": "fade-up 0.7s 0.3s ease both",
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        background: #f6f6f6;
+        color: #0f0f10;
+        font-family: "Inter", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Equity curve SVG glow */
+      .chart-glow {
+        filter: drop-shadow(0 0 8px rgba(97, 90, 135, 0.35));
+      }
+
+      /* Glassmorphism card */
+      .glass-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+
+      /* Scrollbar hide */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      /* Feature card hover */
+      .feature-card {
+        transition:
+          box-shadow 0.2s,
+          transform 0.2s;
+      }
+      .feature-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 32px 0 rgba(48, 45, 67, 0.1);
+      }
+
+      /* Gradient text */
+      .gradient-text {
+        background: linear-gradient(
+          135deg,
+          #302d43 0%,
+          #615a87 60%,
+          #857fa9 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      /* Hero noise overlay */
+      .hero-noise {
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      }
+
+      /* Animate equity number */
+      @keyframes countup {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .count-anim {
+        animation: countup 0.8s 0.5s ease both;
+      }
+
+      .nav-blur {
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        background: rgba(246, 246, 246, 0.88);
+      }
+
+      /* Progress bar fill animation */
+      @keyframes fill-bar {
+        from {
+          width: 0;
+        }
+        to {
+          width: var(--fill);
+        }
+      }
+      .progress-fill {
+        animation: fill-bar 1.2s 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+        width: var(--fill);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <!-- ─── NAVBAR ─── -->
+      <nav
+        class="fixed top-0 left-0 right-0 z-50 nav-blur border-b border-neutral-200/60"
+      >
+        <div
+          class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between"
+        >
+          <!-- Logo -->
+          <div class="flex items-center gap-2.5">
+            <div
+              class="w-8 h-8 rounded-lg bg-primary-800 flex items-center justify-center"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <polyline
+                  points="1,12 5,7 8,9 12,4 15,6"
+                  stroke="#d1cede"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  fill="none"
+                />
+                <circle cx="15" cy="6" r="1.5" fill="#1ccf88" />
+              </svg>
+            </div>
+            <span
+              class="font-semibold text-primary-900 tracking-tight text-[15px]"
+              >TradeS<span class="text-primary-500">im</span></span
+            >
+          </div>
+
+          <!-- Nav links (desktop) -->
+          <div
+            class="hidden md:flex items-center gap-8 text-[13.5px] font-medium text-neutral-500"
+          >
+            <a href="#features" class="hover:text-primary-800 transition-colors"
+              >Features</a
+            >
+            <a href="#rules" class="hover:text-primary-800 transition-colors"
+              >Challenge Rules</a
+            >
+            <a
+              href="#analytics"
+              class="hover:text-primary-800 transition-colors"
+              >Analytics</a
+            >
+            <a
+              href="#templates"
+              class="hover:text-primary-800 transition-colors"
+              >Templates</a
+            >
+          </div>
+
+          <!-- CTA -->
+          <div class="flex items-center gap-2.5">
+            <button
+              class="hidden md:block text-[13.5px] font-medium text-neutral-700 hover:text-primary-800 transition-colors px-4 py-2"
+            >
+              Log In
+            </button>
+            <button
+              class="text-[13.5px] font-semibold bg-primary-800 text-neutral-50 px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Get Started Free
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- ─── HERO ─── -->
+      <section
+        class="relative min-h-screen flex items-center overflow-hidden pt-16 hero-noise"
+      >
+        <!-- Background circles -->
+        <div
+          class="absolute -top-32 -right-48 w-[600px] h-[600px] rounded-full bg-primary-100/60 blur-3xl pointer-events-none"
+        ></div>
+        <div
+          class="absolute bottom-0 -left-32 w-[400px] h-[400px] rounded-full bg-success-50/70 blur-3xl pointer-events-none"
+        ></div>
+
+        <div
+          class="max-w-6xl mx-auto px-6 w-full grid md:grid-cols-2 gap-12 items-center py-20"
+        >
+          <!-- Left: copy -->
+          <div class="animate-fade-up">
+            <!-- Badge -->
+            <div
+              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary-200 bg-primary-50 text-primary-600 text-[12px] font-medium mb-7"
+            >
+              <span
+                class="w-1.5 h-1.5 rounded-full bg-success-500 pulse-dot inline-block"
+              ></span>
+              Prop Firm Challenge Simulator
+            </div>
+
+            <h1
+              class="text-[2.75rem] md:text-[3.5rem] font-extrabold leading-[1.08] tracking-tight text-primary-900 mb-6"
+            >
+              Master the<br />
+              <span class="gradient-text">Prop Firm Rules.</span><br />
+              Pass with Confidence.
+            </h1>
+
+            <p
+              class="text-neutral-500 text-[16px] leading-relaxed mb-8 max-w-md"
+            >
+              Simulate any prop firm challenge — FTMO, MyFundedFx, TopStep —
+              with a real-time risk engine, equity tracking, and deep trade
+              analytics. No live capital at risk.
+            </p>
+
+            <div class="flex items-center gap-3 flex-wrap">
+              <button
+                class="bg-primary-800 text-neutral-50 text-[14px] font-semibold px-6 py-3 rounded-xl hover:bg-primary-700 transition-colors shadow-md shadow-primary-900/10"
+              >
+                Start Simulating Free
+              </button>
+              <button
+                class="border border-neutral-300 bg-white text-neutral-700 text-[14px] font-medium px-6 py-3 rounded-xl hover:border-primary-300 hover:text-primary-700 transition-colors"
+              >
+                See How It Works
+              </button>
+            </div>
+
+            <!-- Stats row -->
+            <div class="mt-10 flex items-center gap-6 flex-wrap">
+              <div>
+                <div class="text-[22px] font-bold text-primary-900 font-mono">
+                  20
+                </div>
+                <div class="text-[12px] text-neutral-400 font-medium">
+                  Active Sims/User
+                </div>
+              </div>
+              <div class="w-px h-8 bg-neutral-200"></div>
+              <div>
+                <div class="text-[22px] font-bold text-primary-900 font-mono">
+                  4+
+                </div>
+                <div class="text-[12px] text-neutral-400 font-medium">
+                  Drawdown Types
+                </div>
+              </div>
+              <div class="w-px h-8 bg-neutral-200"></div>
+              <div>
+                <div class="text-[22px] font-bold text-success-600 font-mono">
+                  &lt;200ms
+                </div>
+                <div class="text-[12px] text-neutral-400 font-medium">
+                  Risk Engine Speed
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: mock dashboard card -->
+          <div class="animate-fade-up-delay2 relative">
+            <!-- Main card -->
+            <div
+              class="glass-card rounded-2xl border border-neutral-200 shadow-xl shadow-primary-900/8 overflow-hidden"
+            >
+              <!-- Card header -->
+              <div
+                class="px-5 pt-5 pb-4 border-b border-neutral-100 flex items-center justify-between"
+              >
+                <div>
+                  <div
+                    class="text-[11px] text-neutral-400 font-medium uppercase tracking-widest mb-1"
+                  >
+                    FTMO $100K — Phase 1
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="text-[22px] font-bold text-primary-900 font-mono count-anim"
+                      >$104,280</span
+                    >
+                    <span
+                      class="text-[11px] font-semibold text-success-600 bg-success-50 px-2 py-0.5 rounded-full"
+                      >+4.28%</span
+                    >
+                  </div>
+                </div>
+                <div
+                  class="w-8 h-8 rounded-lg bg-success-50 border border-success-200 flex items-center justify-center"
+                >
+                  <span class="text-success-600 text-xs font-bold">✓</span>
+                </div>
+              </div>
+
+              <!-- Equity chart -->
+              <div class="px-5 py-4">
+                <svg
+                  class="w-full chart-glow"
+                  height="90"
+                  viewBox="0 0 340 90"
+                  preserveAspectRatio="none"
+                >
+                  <defs>
+                    <linearGradient id="eq-fill" x1="0" y1="0" x2="0" y2="1">
+                      <stop
+                        offset="0%"
+                        stop-color="#615a87"
+                        stop-opacity="0.18"
+                      />
+                      <stop
+                        offset="100%"
+                        stop-color="#615a87"
+                        stop-opacity="0"
+                      />
+                    </linearGradient>
+                  </defs>
+                  <!-- Floor line -->
+                  <line
+                    x1="0"
+                    y1="72"
+                    x2="340"
+                    y2="72"
+                    stroke="#d1cede"
+                    stroke-width="1"
+                    stroke-dasharray="5,4"
+                  />
+                  <!-- Equity path fill -->
+                  <path
+                    d="M0,70 C30,68 50,72 70,65 C90,58 110,60 130,52 C150,44 160,55 180,48 C200,41 220,38 240,30 C260,22 280,28 300,20 C315,14 330,16 340,10 L340,90 L0,90 Z"
+                    fill="url(#eq-fill)"
+                  />
+                  <!-- Equity path stroke -->
+                  <path
+                    d="M0,70 C30,68 50,72 70,65 C90,58 110,60 130,52 C150,44 160,55 180,48 C200,41 220,38 240,30 C260,22 280,28 300,20 C315,14 330,16 340,10"
+                    stroke="#615a87"
+                    stroke-width="2.2"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <!-- Profit target dotted line -->
+                  <line
+                    x1="0"
+                    y1="30"
+                    x2="340"
+                    y2="30"
+                    stroke="#1ccf88"
+                    stroke-width="1"
+                    stroke-dasharray="5,4"
+                    opacity="0.7"
+                  />
+                  <!-- Label -->
+                  <text
+                    x="4"
+                    y="26"
+                    font-size="8"
+                    fill="#1ccf88"
+                    font-family="JetBrains Mono"
+                    opacity="0.9"
+                  >
+                    target
+                  </text>
+                  <text
+                    x="4"
+                    y="68"
+                    font-size="8"
+                    fill="#aea9c6"
+                    font-family="JetBrains Mono"
+                  >
+                    floor
+                  </text>
+                </svg>
+              </div>
+
+              <!-- Progress bars -->
+              <div class="px-5 pb-5 space-y-3">
+                <div>
+                  <div
+                    class="flex justify-between text-[11px] font-medium mb-1.5"
+                  >
+                    <span class="text-neutral-500">Profit Target</span>
+                    <span class="text-primary-700 font-mono">4.28% / 10%</span>
+                  </div>
+                  <div
+                    class="h-1.5 bg-neutral-100 rounded-full overflow-hidden"
+                  >
+                    <div
+                      class="progress-fill h-full bg-primary-500 rounded-full"
+                      style="--fill: 43%"
+                    ></div>
+                  </div>
+                </div>
+                <div>
+                  <div
+                    class="flex justify-between text-[11px] font-medium mb-1.5"
+                  >
+                    <span class="text-neutral-500">Trading Days</span>
+                    <span class="text-primary-700 font-mono">6 / 10 days</span>
+                  </div>
+                  <div
+                    class="h-1.5 bg-neutral-100 rounded-full overflow-hidden"
+                  >
+                    <div
+                      class="progress-fill h-full bg-gold-500 rounded-full"
+                      style="--fill: 60%"
+                    ></div>
+                  </div>
+                </div>
+                <div>
+                  <div
+                    class="flex justify-between text-[11px] font-medium mb-1.5"
+                  >
+                    <span class="text-neutral-500">Daily Drawdown Used</span>
+                    <span class="text-success-600 font-mono">0.8% / 5%</span>
+                  </div>
+                  <div
+                    class="h-1.5 bg-neutral-100 rounded-full overflow-hidden"
+                  >
+                    <div
+                      class="progress-fill h-full bg-success-400 rounded-full"
+                      style="--fill: 16%"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Floating mini card: last trade -->
+            <div
+              class="absolute -bottom-4 -left-6 glass-card rounded-xl border border-neutral-200 shadow-lg px-4 py-3 flex items-center gap-3 hidden md:flex"
+            >
+              <div
+                class="w-7 h-7 rounded-lg bg-success-50 flex items-center justify-center text-success-600"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <polyline
+                    points="2,10 5,6 8,8 12,3"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <polyline
+                    points="10,3 12,3 12,5"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </div>
+              <div>
+                <div class="text-[11px] font-semibold text-primary-900">
+                  XAUUSD LONG
+                </div>
+                <div class="text-[10px] text-success-600 font-mono font-medium">
+                  +$320 · R:R 2.4
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── FEATURE HIGHLIGHTS ─── -->
+      <section id="features" class="py-20 max-w-6xl mx-auto px-6">
+        <div class="text-center mb-14">
+          <div
+            class="text-[12px] font-semibold text-primary-500 uppercase tracking-[0.12em] mb-3"
+          >
+            Everything You Need
+          </div>
+          <h2
+            class="text-[2.2rem] font-extrabold text-primary-900 tracking-tight leading-tight"
+          >
+            Built around how<br />prop challenges actually work
+          </h2>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-5">
+          <!-- Feature 1 -->
+          <div
+            class="feature-card bg-white rounded-2xl border border-neutral-200 p-6"
+            v-for="f in features"
+            :key="f.title"
+          >
+            <div
+              class="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
+              :class="f.iconBg"
+            >
+              <span v-html="f.icon" class="text-lg"></span>
+            </div>
+            <h3 class="text-[15px] font-semibold text-primary-900 mb-2">
+              {{ f.title }}
+            </h3>
+            <p class="text-[13.5px] text-neutral-500 leading-relaxed">
+              {{ f.desc }}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── RULES ENGINE ─── -->
+      <section id="rules" class="py-20 bg-primary-950 relative overflow-hidden">
+        <div
+          class="absolute inset-0 hero-noise pointer-events-none opacity-50"
+        ></div>
+        <div
+          class="absolute top-0 right-0 w-96 h-96 rounded-full bg-primary-700/20 blur-3xl pointer-events-none"
+        ></div>
+
+        <div class="max-w-6xl mx-auto px-6 relative z-10">
+          <div class="grid md:grid-cols-2 gap-16 items-center">
+            <!-- Left: copy -->
+            <div>
+              <div
+                class="text-[12px] font-semibold text-primary-400 uppercase tracking-[0.12em] mb-3"
+              >
+                Risk Engine
+              </div>
+              <h2
+                class="text-[2.2rem] font-extrabold text-neutral-50 tracking-tight leading-tight mb-5"
+              >
+                Real-Time Drawdown.<br />
+                <span class="text-primary-300">Zero Surprises.</span>
+              </h2>
+              <p class="text-neutral-400 text-[15px] leading-relaxed mb-8">
+                Every trade mutation triggers instant recalculation of your
+                equity curve, high-water mark, and all drawdown rules.
+                Violations are detected the moment they happen — not at end of
+                day.
+              </p>
+
+              <div class="space-y-4">
+                <div
+                  v-for="rule in drawdownRules"
+                  :key="rule.type"
+                  class="flex items-start gap-4"
+                >
+                  <div
+                    class="w-2 h-2 rounded-full mt-2 flex-shrink-0"
+                    :class="rule.dot"
+                  ></div>
+                  <div>
+                    <div class="text-[14px] font-semibold text-neutral-200">
+                      {{ rule.type }}
+                    </div>
+                    <div
+                      class="text-[13px] text-neutral-500 leading-relaxed mt-0.5"
+                    >
+                      {{ rule.desc }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: code card -->
+            <div
+              class="bg-primary-900/60 border border-primary-700/50 rounded-2xl overflow-hidden"
+            >
+              <div
+                class="flex items-center gap-2 px-4 py-3 border-b border-primary-700/40"
+              >
+                <div class="w-3 h-3 rounded-full bg-red-500/70"></div>
+                <div class="w-3 h-3 rounded-full bg-gold-400/70"></div>
+                <div class="w-3 h-3 rounded-full bg-success-500/70"></div>
+                <span class="ml-3 text-[11px] font-mono text-primary-400"
+                  >account_status.json</span
+                >
+              </div>
+              <pre
+                class="p-5 text-[12px] font-mono leading-relaxed text-primary-200 overflow-x-auto no-scrollbar"
+              ><code><span class="text-neutral-500">{</span>
+  <span class="text-gold-400">"status"</span>: <span class="text-success-400">"ACTIVE"</span>,
+  <span class="text-gold-400">"equity"</span>: <span class="text-primary-300">104280.00</span>,
+  <span class="text-gold-400">"drawdown_used_pct"</span>: <span class="text-primary-300">2.5</span>,
+  <span class="text-gold-400">"drawdown_remaining_pct"</span>: <span class="text-success-400">7.5</span>,
+  <span class="text-gold-400">"daily_drawdown_used_pct"</span>: <span class="text-primary-300">0.8</span>,
+  <span class="text-gold-400">"profit_achieved_pct"</span>: <span class="text-success-400">4.28</span>,
+  <span class="text-gold-400">"trading_days_completed"</span>: <span class="text-primary-300">6</span>,
+  <span class="text-gold-400">"trading_days_required"</span>: <span class="text-primary-300">10</span>,
+  <span class="text-gold-400">"consistency_score_pct"</span>: <span class="text-primary-300">22.3</span>,
+  <span class="text-gold-400">"violations"</span>: <span class="text-success-400">[]</span>
+<span class="text-neutral-500">}</span></code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── TRADING JOURNAL ─── -->
+      <section class="py-20 max-w-6xl mx-auto px-6">
+        <div class="grid md:grid-cols-2 gap-16 items-center">
+          <!-- Trade journal mock -->
+          <div class="space-y-2.5 order-2 md:order-1">
+            <!-- Table header -->
+            <div
+              class="grid grid-cols-5 px-4 py-2 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider"
+            >
+              <span>Symbol</span><span>Dir</span><span>P&amp;L</span
+              ><span>R:R</span><span>Session</span>
+            </div>
+            <div
+              v-for="t in trades"
+              :key="t.sym"
+              class="bg-white rounded-xl border border-neutral-200 grid grid-cols-5 px-4 py-3.5 items-center feature-card"
+            >
+              <span class="text-[13px] font-semibold text-primary-900 font-mono"
+                >{{ t.sym }}</span
+              >
+              <span
+                class="text-[11px] font-bold px-2 py-0.5 rounded-md inline-block w-fit"
+                :class="t.dir === 'L' ? 'bg-success-50 text-success-700' : 'bg-red-50 text-red-600'"
+                >{{ t.dir === 'L' ? 'LONG' : 'SHORT' }}</span
+              >
+              <span
+                class="text-[13px] font-mono font-semibold"
+                :class="t.pnl > 0 ? 'text-success-600' : 'text-red-500'"
+                >{{ t.pnl > 0 ? '+' : '' }}${{ t.pnl }}</span
+              >
+              <span class="text-[13px] font-mono text-neutral-600"
+                >{{ t.rr }}</span
+              >
+              <span class="text-[11px] text-neutral-400 font-medium"
+                >{{ t.session }}</span
+              >
+            </div>
+            <!-- Search/filter bar -->
+            <div class="flex items-center gap-2 pt-1">
+              <div
+                class="flex-1 bg-white border border-neutral-200 rounded-lg px-3 py-2 flex items-center gap-2"
+              >
+                <svg
+                  class="w-3.5 h-3.5 text-neutral-400"
+                  fill="none"
+                  viewBox="0 0 16 16"
+                >
+                  <circle
+                    cx="7"
+                    cy="7"
+                    r="4.5"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  />
+                  <line
+                    x1="10.5"
+                    y1="10.5"
+                    x2="14"
+                    y2="14"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <span class="text-[12px] text-neutral-400">Search notes…</span>
+              </div>
+              <div
+                class="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-[12px] text-neutral-500"
+              >
+                Filter ▾
+              </div>
+              <div
+                class="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-[12px] text-neutral-500"
+              >
+                Sort ▾
+              </div>
+            </div>
+          </div>
+
+          <!-- Copy -->
+          <div class="order-1 md:order-2">
+            <div
+              class="text-[12px] font-semibold text-primary-500 uppercase tracking-[0.12em] mb-3"
+            >
+              Trading Journal
+            </div>
+            <h2
+              class="text-[2.2rem] font-extrabold text-primary-900 tracking-tight leading-tight mb-5"
+            >
+              Log trades.<br />
+              Find your edge.
+            </h2>
+            <p class="text-neutral-500 text-[15px] leading-relaxed mb-6">
+              Record every closed trade with entry/exit, lot size, session, and
+              screenshots. Filter by symbol, strategy, or tags. Let the data
+              tell you which setups are actually working.
+            </p>
+            <div class="space-y-3">
+              <div
+                v-for="j in journalFeatures"
+                :key="j"
+                class="flex items-center gap-3 text-[14px] text-neutral-600"
+              >
+                <div
+                  class="w-5 h-5 rounded-full bg-success-50 border border-success-200 flex items-center justify-center flex-shrink-0"
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <polyline
+                      points="2,5.5 4,7.5 8,3"
+                      stroke="#17ab70"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+                {{ j }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── ANALYTICS ─── -->
+      <section id="analytics" class="py-20 bg-neutral-100/60">
+        <div class="max-w-6xl mx-auto px-6">
+          <div class="text-center mb-14">
+            <div
+              class="text-[12px] font-semibold text-primary-500 uppercase tracking-[0.12em] mb-3"
+            >
+              Analytics
+            </div>
+            <h2
+              class="text-[2.2rem] font-extrabold text-primary-900 tracking-tight"
+            >
+              8 dimensions of performance
+            </h2>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div
+              v-for="stat in analyticsStats"
+              :key="stat.label"
+              class="bg-white rounded-2xl border border-neutral-200 p-5 feature-card"
+            >
+              <div
+                class="text-[26px] font-extrabold font-mono mb-1"
+                :class="stat.color"
+              >
+                {{ stat.value }}
+              </div>
+              <div class="text-[12px] font-semibold text-neutral-700 mb-1">
+                {{ stat.label }}
+              </div>
+              <div class="text-[11.5px] text-neutral-400 leading-snug">
+                {{ stat.sub }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Calendar heatmap visual -->
+          <div class="mt-8 bg-white rounded-2xl border border-neutral-200 p-6">
+            <div
+              class="text-[12px] font-semibold text-neutral-500 uppercase tracking-wider mb-4"
+            >
+              Daily P&amp;L Calendar — June 2026
+            </div>
+            <div class="grid grid-cols-7 gap-1.5">
+              <div
+                v-for="d in calendarDays"
+                :key="d.day"
+                class="aspect-square rounded-lg flex items-center justify-center text-[10px] font-mono font-medium transition-transform hover:scale-110 cursor-default"
+                :class="d.cls"
+                :title="d.label"
+              >
+                {{ d.day || '' }}
+              </div>
+            </div>
+            <div class="flex items-center gap-3 mt-4">
+              <span class="text-[11px] text-neutral-400">Loss</span>
+              <div class="flex gap-1">
+                <div class="w-4 h-2 rounded bg-red-400"></div>
+                <div class="w-4 h-2 rounded bg-red-200"></div>
+                <div class="w-4 h-2 rounded bg-neutral-200"></div>
+                <div class="w-4 h-2 rounded bg-success-200"></div>
+                <div class="w-4 h-2 rounded bg-success-400"></div>
+              </div>
+              <span class="text-[11px] text-neutral-400">Gain</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── TEMPLATES ─── -->
+      <section id="templates" class="py-20 max-w-6xl mx-auto px-6">
+        <div class="text-center mb-14">
+          <div
+            class="text-[12px] font-semibold text-primary-500 uppercase tracking-[0.12em] mb-3"
+          >
+            Challenge Templates
+          </div>
+          <h2
+            class="text-[2.2rem] font-extrabold text-primary-900 tracking-tight"
+          >
+            Start with any prop firm's rules
+          </h2>
+          <p class="text-neutral-500 text-[15px] mt-3 max-w-md mx-auto">
+            Pre-configured rule sets based on real prop firms. Or build your own
+            from scratch.
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div
+            v-for="t in templates"
+            :key="t.name"
+            class="feature-card bg-white rounded-2xl border border-neutral-200 p-5"
+          >
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-[13px] font-bold text-primary-900"
+                >{{ t.name }}</span
+              >
+              <span
+                class="text-[10px] font-semibold text-primary-500 bg-primary-50 px-2 py-1 rounded-full"
+                >{{ t.account }}</span
+              >
+            </div>
+            <div class="space-y-2">
+              <div class="flex justify-between text-[12px]">
+                <span class="text-neutral-400">Max DD</span>
+                <span class="font-mono font-semibold text-red-500"
+                  >{{ t.maxDD }}</span
+                >
+              </div>
+              <div class="flex justify-between text-[12px]">
+                <span class="text-neutral-400">Daily DD</span>
+                <span class="font-mono font-semibold text-gold-600"
+                  >{{ t.dailyDD }}</span
+                >
+              </div>
+              <div class="flex justify-between text-[12px]">
+                <span class="text-neutral-400">Target</span>
+                <span class="font-mono font-semibold text-success-600"
+                  >{{ t.target }}</span
+                >
+              </div>
+              <div class="flex justify-between text-[12px]">
+                <span class="text-neutral-400">Min Days</span>
+                <span class="font-mono font-semibold text-primary-600"
+                  >{{ t.minDays }}</span
+                >
+              </div>
+            </div>
+            <button
+              class="mt-4 w-full text-[12px] font-semibold text-primary-700 border border-primary-200 rounded-lg py-2 hover:bg-primary-50 transition-colors"
+            >
+              Use Template →
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── CTA BANNER ─── -->
+      <section class="py-16 max-w-6xl mx-auto px-6">
+        <div
+          class="bg-primary-800 rounded-3xl p-10 md:p-14 relative overflow-hidden"
+        >
+          <div
+            class="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-primary-600/30 blur-3xl pointer-events-none"
+          ></div>
+          <div class="relative z-10 text-center">
+            <h2
+              class="text-[2rem] md:text-[2.6rem] font-extrabold text-neutral-50 tracking-tight mb-4"
+            >
+              Ready to pass your<br />next challenge?
+            </h2>
+            <p class="text-primary-300 text-[15px] mb-8 max-w-md mx-auto">
+              Simulate before you trade. Build discipline. Understand your rules
+              deeply. Then go live with confidence.
+            </p>
+            <button
+              class="bg-neutral-50 text-primary-900 text-[14px] font-bold px-8 py-3.5 rounded-xl hover:bg-white transition-colors shadow-lg"
+            >
+              Create Your First Simulation →
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── FOOTER ─── -->
+      <footer class="border-t border-neutral-200 py-8">
+        <div
+          class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4"
+        >
+          <div class="flex items-center gap-2">
+            <div
+              class="w-6 h-6 rounded-md bg-primary-800 flex items-center justify-center"
+            >
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                <polyline
+                  points="1,12 5,7 8,9 12,4 15,6"
+                  stroke="#d1cede"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  fill="none"
+                />
+                <circle cx="15" cy="6" r="2" fill="#1ccf88" />
+              </svg>
+            </div>
+            <span class="text-[13px] font-semibold text-primary-900"
+              >TradeSim</span
+            >
+          </div>
+          <div class="text-[12px] text-neutral-400">
+            © 2026 TradeSim · All financial calculations are for simulation
+            purposes only
+          </div>
+          <div class="flex items-center gap-5 text-[12px] text-neutral-500">
+            <a href="#" class="hover:text-primary-700 transition-colors"
+              >Privacy</a
+            >
+            <a href="#" class="hover:text-primary-700 transition-colors"
+              >Terms</a
+            >
+            <a href="#" class="hover:text-primary-700 transition-colors"
+              >Contact</a
+            >
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      const { createApp } = Vue;
+      createApp({
+        data() {
+          return {
+            features: [
+              {
+                title: "Simulation Management",
+                desc: "Create up to 20 independent simulations with custom rules, account sizes, and currencies. Track lifecycle from ACTIVE → PASSED or FAILED.",
+                iconBg: "bg-primary-50",
+                icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="6" rx="1.5" stroke="#615a87" stroke-width="1.5"/><rect x="10" y="2" width="6" height="6" rx="1.5" stroke="#615a87" stroke-width="1.5"/><rect x="2" y="10" width="6" height="6" rx="1.5" stroke="#615a87" stroke-width="1.5"/><rect x="10" y="10" width="6" height="6" rx="1.5" stroke="#615a87" stroke-width="1.5"/></svg>`,
+              },
+              {
+                title: "Challenge Rules Engine",
+                desc: "Configure static, daily, or trailing drawdown. Set profit targets, minimum trading days, and the consistency rule — all in one place.",
+                iconBg: "bg-gold-50",
+                icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2L16 15H2L9 2Z" stroke="#b08b17" stroke-width="1.5" stroke-linejoin="round"/><line x1="9" y1="8" x2="9" y2="11" stroke="#b08b17" stroke-width="1.5" stroke-linecap="round"/><circle cx="9" cy="13" r="0.8" fill="#b08b17"/></svg>`,
+              },
+              {
+                title: "Trade Journal",
+                desc: "Log closed trades with symbol, direction, lot size, session, strategy, and tags. Attach up to 5 screenshots per trade.",
+                iconBg: "bg-success-50",
+                icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="3" y="2" width="12" height="14" rx="2" stroke="#17ab70" stroke-width="1.5"/><line x1="6" y1="6" x2="12" y2="6" stroke="#17ab70" stroke-width="1.5" stroke-linecap="round"/><line x1="6" y1="9" x2="12" y2="9" stroke="#17ab70" stroke-width="1.5" stroke-linecap="round"/><line x1="6" y1="12" x2="9" y2="12" stroke="#17ab70" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+              },
+              {
+                title: "Equity Curve Dashboard",
+                desc: "Visualize equity over time with drawdown floor and profit target overlays. Daily P&L bars, calendar heatmap, and challenge progress gauges.",
+                iconBg: "bg-primary-50",
+                icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><polyline points="2,14 6,9 9,11 13,5 16,7" stroke="#615a87" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`,
+              },
+              {
+                title: "Deep Analytics",
+                desc: "Win rate, profit factor, expectancy, streaks — broken down by symbol, session, strategy, and day of week. Find what's working.",
+                iconBg: "bg-gold-50",
+                icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="3" y="10" width="3" height="6" rx="1" fill="#d9ab1c"/><rect x="7.5" y="6" width="3" height="10" rx="1" fill="#d9ab1c"/><rect x="12" y="2" width="3" height="14" rx="1" fill="#d9ab1c"/></svg>`,
+              },
+              {
+                title: "Firm Templates",
+                desc: "Start instantly with pre-configured FTMO, MyFundedFx, The5ers, or TopStep Futures rule sets. Or define fully custom challenge rules.",
+                iconBg: "bg-success-50",
+                icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 6h10M4 9h6M4 12h8" stroke="#17ab70" stroke-width="1.5" stroke-linecap="round"/><rect x="2" y="2" width="14" height="14" rx="2.5" stroke="#17ab70" stroke-width="1.5"/></svg>`,
+              },
+            ],
+            drawdownRules: [
+              {
+                dot: "bg-red-400",
+                type: "Static Max Drawdown",
+                desc: "Fixed floor from initial balance. Account can never fall below initial_balance − max_DD.",
+              },
+              {
+                dot: "bg-gold-400",
+                type: "Daily Drawdown",
+                desc: "Resets at configurable timezone. Protects against single bad days wiping the challenge.",
+              },
+              {
+                dot: "bg-primary-400",
+                type: "Trailing (High-Water Mark)",
+                desc: "Floor moves up as equity grows, never down. Closest to real funded account rules.",
+              },
+              {
+                dot: "bg-success-400",
+                type: "Combined Mode",
+                desc: "Enforce max DD and daily DD simultaneously. One violation fails the challenge.",
+              },
+            ],
+            journalFeatures: [
+              "Attach up to 5 screenshots per trade (JPEG, PNG, WEBP)",
+              "Filter by date range, symbol, session, strategy, or tags",
+              "Auto-calculated P&L, R:R, and risk metrics",
+              "User-defined strategies shared across all simulations",
+              "Free-form notes with full-text search",
+            ],
+            analyticsStats: [
+              {
+                value: "68.4%",
+                label: "Win Rate",
+                sub: "By symbol, session & strategy",
+                color: "text-success-600",
+              },
+              {
+                value: "2.3×",
+                label: "Profit Factor",
+                sub: "Rolling 20-trade trend",
+                color: "text-primary-700",
+              },
+              {
+                value: "$148",
+                label: "Expectancy",
+                sub: "Per trade in $",
+                color: "text-gold-600",
+              },
+              {
+                value: "7",
+                label: "Win Streak",
+                sub: "Current / longest on record",
+                color: "text-primary-600",
+              },
+              {
+                value: "1.8",
+                label: "Avg R:R",
+                sub: "Mean across all trades",
+                color: "text-primary-700",
+              },
+              {
+                value: "NY",
+                label: "Best Session",
+                sub: "New York highest win rate",
+                color: "text-success-600",
+              },
+              {
+                value: "-3.1%",
+                label: "Max Drawdown",
+                sub: "Reached vs allowed 10%",
+                color: "text-red-500",
+              },
+              {
+                value: "3.2×",
+                label: "Recovery Factor",
+                sub: "Net profit / max drawdown",
+                color: "text-gold-600",
+              },
+            ],
+            calendarDays: (() => {
+              // June 2026 starts Sunday (day 0), 30 days
+              const pnlMap = {
+                1: 320,
+                2: -180,
+                3: 0,
+                4: 480,
+                5: 0,
+                6: 0,
+                7: 0,
+                8: 220,
+                9: -90,
+                10: 550,
+                11: 180,
+                12: -310,
+                13: 0,
+                14: 0,
+                15: 90,
+                16: -60,
+                17: 280,
+                18: 420,
+                19: 0,
+                20: 0,
+                21: 0,
+                22: 150,
+                23: -240,
+                24: 380,
+                25: 60,
+                26: 310,
+                27: 0,
+                28: 0,
+                29: 220,
+                30: -80,
+              };
+              const days = [];
+              // June 2026: starts on Monday (day 1 in 0-indexed Mon = 0)
+              // Padding: Mon = index 0; June 1 = Monday → 0 padding
+              for (let d = 1; d <= 30; d++) {
+                const pnl = pnlMap[d] ?? 0;
+                let cls = "";
+                if (pnl > 400) cls = "bg-success-400 text-success-900";
+                else if (pnl > 100) cls = "bg-success-200 text-success-800";
+                else if (pnl === 0) cls = "bg-neutral-100 text-neutral-300";
+                else if (pnl > -200) cls = "bg-red-100 text-red-400";
+                else cls = "bg-red-300 text-red-800";
+                days.push({
+                  day: d,
+                  cls,
+                  label: pnl !== 0 ? (pnl > 0 ? `+$${pnl}` : `$${pnl}`) : "—",
+                });
+              }
+              return days;
+            })(),
+            trades: [
+              {
+                sym: "XAUUSD",
+                dir: "L",
+                pnl: 320,
+                rr: "2.4",
+                session: "London",
+              },
+              { sym: "EURUSD", dir: "S", pnl: -90, rr: "1.1", session: "NY" },
+              { sym: "NQ", dir: "L", pnl: 480, rr: "3.2", session: "NY" },
+              {
+                sym: "GBPUSD",
+                dir: "S",
+                pnl: 155,
+                rr: "1.8",
+                session: "London",
+              },
+              {
+                sym: "USDJPY",
+                dir: "L",
+                pnl: -210,
+                rr: "0.9",
+                session: "Asia",
+              },
+            ],
+            templates: [
+              {
+                name: "FTMO Standard",
+                account: "$100K",
+                maxDD: "10%",
+                dailyDD: "5%",
+                target: "10%",
+                minDays: "10",
+              },
+              {
+                name: "MyFundedFx",
+                account: "$100K",
+                maxDD: "12% trail",
+                dailyDD: "5%",
+                target: "10%",
+                minDays: "5",
+              },
+              {
+                name: "The5ers Hyper",
+                account: "$100K",
+                maxDD: "6% static",
+                dailyDD: "—",
+                target: "8%",
+                minDays: "—",
+              },
+              {
+                name: "TopStep Futures",
+                account: "$150K",
+                maxDD: "trail $3K",
+                dailyDD: "—",
+                target: "$9,000",
+                minDays: "10",
+              },
+            ],
+          };
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
