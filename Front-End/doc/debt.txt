@@ -1,0 +1,13 @@
+====
+register dan login:
+- menampilkan required form
+- menampilkan error alert
+
+
+register:
+menampilkan error validasi
+
+
+api.js:
+
+ubah ke env basuser

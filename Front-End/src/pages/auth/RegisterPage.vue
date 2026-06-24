@@ -1,24 +1,35 @@
 <script setup>
 import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+
+const authStore = useAuthStore();
+const router = useRouter();
+
 import AuthLayout from "@/components/auth-page/AuthLayout.vue";
 
-const register = ref({
-  name: "",
+const registerForm = ref({
+  display_name: "",
   email: "",
   password: "",
-  currency: "USD",
+  default_currency: "USD",
   timezone: "Asia/Jakarta",
-  agreed: false,
 });
 
-function handleRegister() {
-  console.log(register.value);
-}
+const handleRegister = async () => {
+  try {
+    await authStore.register(registerForm.value);
+    alert("Register Successfully");
+    router.push("/login");
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 const passwordStrength = computed(() => {
   let score = 0;
 
-  const p = register.value.password;
+  const p = registerForm.value.password;
 
   if (p.length >= 8) score++;
   if (/[A-Z]/.test(p)) score++;
@@ -110,7 +121,7 @@ const strengthLabel = computed(() => {
             >Display name</label
           >
           <input
-            v-model="register.name"
+            v-model="registerForm.display_name"
             type="text"
             placeholder="e.g. John Trader"
             class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13.5px] text-neutral-900 placeholder-neutral-400 bg-white"
@@ -124,7 +135,7 @@ const strengthLabel = computed(() => {
             >Email address</label
           >
           <input
-            v-model="register.email"
+            v-model="registerForm.email"
             type="email"
             placeholder="Enter your email address"
             class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13.5px] text-neutral-900 placeholder-neutral-400 bg-white"
@@ -139,17 +150,17 @@ const strengthLabel = computed(() => {
           >
           <div class="relative">
             <input
-              v-model="register.password"
-              :type="register.showPass ? 'text' : 'password'"
+              v-model="registerForm.password"
+              :type="registerForm.showPass ? 'text' : 'password'"
               placeholder="Minimum 8 characters"
               class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13.5px] text-neutral-900 placeholder-neutral-400 bg-white pr-11"
             />
             <button
-              @click="register.showPass = !register.showPass"
+              @click="registerForm.showPass = !registerForm.showPass"
               class="pass-toggle absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
             >
               <svg
-                v-if="!register.showPass"
+                v-if="!registerForm.showPass"
                 width="16"
                 height="16"
                 viewBox="0 0 16 16"
@@ -185,7 +196,7 @@ const strengthLabel = computed(() => {
             </button>
           </div>
           <!-- Password strength -->
-          <div v-if="register.password.length > 0" class="mt-2 flex gap-1">
+          <div v-if="registerForm.password.length > 0" class="mt-2 flex gap-1">
             <div
               v-for="i in 4"
               :key="i"
@@ -194,7 +205,7 @@ const strengthLabel = computed(() => {
             ></div>
           </div>
           <p
-            v-if="register.password.length > 0"
+            v-if="registerForm.password.length > 0"
             class="text-[11px] mt-1"
             :class="strengthTextColor"
           >
@@ -212,7 +223,7 @@ const strengthLabel = computed(() => {
             >
             <div class="relative">
               <select
-                v-model="register.currency"
+                v-model="registerForm.default_currency"
                 class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13px] text-neutral-900 bg-white cursor-pointer pr-8"
               >
                 <option value="USD">🇺🇸 USD</option>
@@ -233,7 +244,7 @@ const strengthLabel = computed(() => {
             >
             <div class="relative">
               <select
-                v-model="register.timezone"
+                v-model="registerForm.timezone"
                 class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13px] text-neutral-900 bg-white cursor-pointer pr-8"
               >
                 <optgroup label="Asia">

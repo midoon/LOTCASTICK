@@ -616,7 +616,7 @@
                   },
                   "timezone": {
                     "type": "string",
-                    "example": "UTC",
+                    "example": "Asia/Jakarta",
                     "default": "UTC"
                   },
                   "default_currency": {
@@ -698,12 +698,7 @@
                       "type": "string",
                       "example": "Login successful"
                     },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "tokens": { "$ref": "#/components/schemas/AuthTokens" }
-                      }
-                    }
+                    "data": { "$ref": "#/components/schemas/AuthTokens" }
                   }
                 }
               }

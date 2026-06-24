@@ -1,6 +1,12 @@
 <script setup>
 import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+
 import AuthLayout from "@/components/auth-page/AuthLayout.vue";
+
+const authStore = useAuthStore();
+const router = useRouter();
 
 const login = ref({
   email: "",
@@ -8,9 +14,16 @@ const login = ref({
   showPass: false,
 });
 
-function handleLogin() {
-  console.log(login.value);
-}
+const handleLogin = async () => {
+  try {
+    await authStore.login(login.value);
+
+    router.push("/dashboard");
+  } catch (error) {
+    console.log(error);
+    alert("Login gagal");
+  }
+};
 </script>
 
 <template>
