@@ -51,16 +51,18 @@
 
         <!-- CTA -->
         <div class="flex items-center gap-2.5">
-          <button
+          <RouterLink
+            to="/login"
             class="hidden md:block text-[13.5px] font-medium text-neutral-700 hover:text-primary-800 transition-colors px-4 py-2"
           >
             Log In
-          </button>
-          <button
-            class="text-[13.5px] font-semibold bg-primary-800 text-neutral-50 px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+          </RouterLink>
+          <RouterLink
+            to="/register"
+            class="text-[13.5px] font-light bg-primary-800 text-neutral-50 px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
           >
             Get Started Free
-          </button>
+          </RouterLink>
         </div>
       </div>
     </nav>

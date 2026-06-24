@@ -42,11 +42,12 @@
         </p>
 
         <div class="flex items-center gap-3 flex-wrap">
-          <button
-            class="bg-primary-800 text-neutral-50 text-[14px] font-semibold px-6 py-3 rounded-xl hover:bg-primary-700 transition-colors shadow-md shadow-primary-900/10"
+          <RouterLink
+            to="/register"
+            class="bg-primary-800 text-neutral-50 text-[14px] font-light px-6 py-3 rounded-xl hover:bg-primary-700 transition-colors shadow-md shadow-primary-900/10"
           >
             Start Simulating Free
-          </button>
+          </RouterLink>
           <button
             class="border border-neutral-300 bg-white text-neutral-700 text-[14px] font-medium px-6 py-3 rounded-xl hover:border-primary-300 hover:text-primary-700 transition-colors"
           >

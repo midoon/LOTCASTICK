@@ -18,11 +18,12 @@
           Simulate before you trade. Build discipline. Understand your rules
           deeply. Then go live with confidence.
         </p>
-        <button
+        <RouterLink
+          to="/register"
           class="bg-neutral-50 text-primary-900 text-[14px] font-bold px-8 py-3.5 rounded-xl hover:bg-white transition-colors shadow-lg"
         >
           Create Your First Simulation →
-        </button>
+        </RouterLink>
       </div>
     </div>
   </section>

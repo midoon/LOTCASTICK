@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TradeSim — Prop Firm Challenge Simulator</title>
+    <title>TradeSim — Auth</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -66,25 +66,23 @@
               mono: ['"JetBrains Mono"', "monospace"],
             },
             keyframes: {
+              "fade-in": {
+                from: { opacity: "0", transform: "translateY(16px)" },
+                to: { opacity: "1", transform: "translateY(0)" },
+              },
+              "slide-left": {
+                from: { opacity: "0", transform: "translateX(20px)" },
+                to: { opacity: "1", transform: "translateX(0)" },
+              },
               "pulse-dot": {
-                "0%, 100%": { opacity: "1" },
+                "0%,100%": { opacity: "1" },
                 "50%": { opacity: "0.4" },
-              },
-              "fade-up": {
-                "0%": { opacity: "0", transform: "translateY(24px)" },
-                "100%": { opacity: "1", transform: "translateY(0)" },
-              },
-              tick: {
-                "0%": { transform: "translateY(0)" },
-                "50%": { transform: "translateY(-2px)" },
-                "100%": { transform: "translateY(0)" },
               },
             },
             animation: {
-              "pulse-dot": "pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-              "fade-up": "fade-up 0.7s ease both",
-              "fade-up-delay": "fade-up 0.7s 0.15s ease both",
-              "fade-up-delay2": "fade-up 0.7s 0.3s ease both",
+              "fade-in": "fade-in 0.5s ease both",
+              "slide-left": "slide-left 0.4s ease both",
+              "pulse-dot": "pulse-dot 2s cubic-bezier(0.4,0,0.6,1) infinite",
             },
           },
         },
@@ -100,111 +98,322 @@
         box-sizing: border-box;
       }
       body {
-        background: #f6f6f6;
-        color: #0f0f10;
         font-family: "Inter", sans-serif;
         -webkit-font-smoothing: antialiased;
       }
 
-      /* Equity curve SVG glow */
-      .chart-glow {
-        filter: drop-shadow(0 0 8px rgba(97, 90, 135, 0.35));
+      /* Custom select arrow */
+      select {
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%2397969c' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
       }
 
-      /* Glassmorphism card */
-      .glass-card {
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+      /* Input focus ring */
+      .input-field:focus {
+        outline: none;
+        border-color: #615a87;
+        box-shadow: 0 0 0 3px rgba(97, 90, 135, 0.12);
       }
-
-      /* Scrollbar hide */
-      .no-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
-
-      /* Feature card hover */
-      .feature-card {
+      .input-field {
         transition:
-          box-shadow 0.2s,
-          transform 0.2s;
-      }
-      .feature-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 32px 0 rgba(48, 45, 67, 0.1);
+          border-color 0.15s,
+          box-shadow 0.15s;
       }
 
-      /* Gradient text */
-      .gradient-text {
+      /* Left panel chart decorative */
+      .chart-glow {
+        filter: drop-shadow(0 0 10px rgba(97, 90, 135, 0.4));
+      }
+
+      /* Password toggle */
+      .pass-toggle {
+        cursor: pointer;
+        user-select: none;
+      }
+
+      /* Tab active underline */
+      .tab-active {
+        border-bottom: 2px solid #302d43;
+        color: #302d43;
+      }
+      .tab-inactive {
+        border-bottom: 2px solid transparent;
+        color: #97969c;
+      }
+      .tab-inactive:hover {
+        color: #5a595f;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #d8d8da;
+        border-radius: 4px;
+      }
+
+      /* Left panel gradient */
+      .panel-bg {
         background: linear-gradient(
-          135deg,
-          #302d43 0%,
-          #615a87 60%,
-          #857fa9 100%
+          145deg,
+          #201e2c 0%,
+          #302d43 50%,
+          #464162 100%
         );
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-
-      /* Hero noise overlay */
-      .hero-noise {
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      }
-
-      /* Animate equity number */
-      @keyframes countup {
-        from {
-          opacity: 0;
-          transform: translateY(8px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .count-anim {
-        animation: countup 0.8s 0.5s ease both;
-      }
-
-      .nav-blur {
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        background: rgba(246, 246, 246, 0.88);
-      }
-
-      /* Progress bar fill animation */
-      @keyframes fill-bar {
-        from {
-          width: 0;
-        }
-        to {
-          width: var(--fill);
-        }
-      }
-      .progress-fill {
-        animation: fill-bar 1.2s 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
-        width: var(--fill);
       }
     </style>
   </head>
-  <body>
-    <div id="app">
-      <!-- ─── NAVBAR ─── -->
+  <body class="bg-neutral-50 min-h-screen">
+    <div id="app" class="min-h-screen flex flex-col">
+      <!-- ─── MINIMAL NAV ─── -->
       <nav
-        class="fixed top-0 left-0 right-0 z-50 nav-blur border-b border-neutral-200/60"
+        class="fixed top-0 left-0 right-0 z-50 bg-neutral-50/90 backdrop-blur-md border-b border-neutral-200/60"
       >
         <div
-          class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between"
+          class="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between"
         >
-          <!-- Logo -->
-          <div class="flex items-center gap-2.5">
+          <a href="#" class="flex items-center gap-2">
             <div
-              class="w-8 h-8 rounded-lg bg-primary-800 flex items-center justify-center"
+              class="w-7 h-7 rounded-lg bg-primary-800 flex items-center justify-center"
+            >
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <polyline
+                  points="1,12 5,7 8,9 12,4 15,6"
+                  stroke="#d1cede"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  fill="none"
+                />
+                <circle cx="15" cy="6" r="1.5" fill="#1ccf88" />
+              </svg>
+            </div>
+            <span
+              class="font-semibold text-primary-900 text-[14px] tracking-tight"
+              >TradeS<span class="text-primary-500">im</span></span
+            >
+          </a>
+          <div class="flex items-center gap-2 text-[13px]">
+            <span class="text-neutral-400"> </span>
+            <button
+              @click="switchMode"
+              class="font-semibold text-primary-700 hover:text-primary-500 transition-colors"
+            >
+              {{ mode === 'login' ? 'Sign Up' : 'Log In' }}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- ─── MAIN ─── -->
+      <main class="flex-1 flex items-stretch pt-14 min-h-screen">
+        <!-- ══ LEFT PANEL (desktop only) ══ -->
+        <div
+          class="hidden lg:flex lg:w-[46%] panel-bg flex-col justify-between p-12 relative overflow-hidden"
+        >
+          <!-- Decorative blobs -->
+          <div
+            class="absolute top-0 right-0 w-80 h-80 rounded-full bg-primary-500/10 blur-3xl pointer-events-none"
+          ></div>
+          <div
+            class="absolute bottom-20 -left-16 w-64 h-64 rounded-full bg-success-500/8 blur-3xl pointer-events-none"
+          ></div>
+
+          <!-- Top: brand -->
+          <div>
+            <div class="flex items-center gap-2.5 mb-16">
+              <div
+                class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <polyline
+                    points="1,12 5,7 8,9 12,4 15,6"
+                    stroke="#d1cede"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    fill="none"
+                  />
+                  <circle cx="15" cy="6" r="1.5" fill="#1ccf88" />
+                </svg>
+              </div>
+              <span class="font-bold text-white text-[16px] tracking-tight"
+                >TradeSim</span
+              >
+            </div>
+
+            <!-- Headline -->
+            <h1
+              class="text-[2.4rem] font-extrabold text-white leading-[1.1] tracking-tight mb-4"
+            >
+              Simulate.<br />
+              Analyze.<br />
+              <span class="text-primary-300">Pass.</span>
+            </h1>
+            <p class="text-primary-300 text-[14.5px] leading-relaxed max-w-xs">
+              The prop firm challenge simulator built for serious traders. No
+              live capital, full discipline.
+            </p>
+          </div>
+
+          <!-- Middle: mock dashboard card -->
+          <div class="my-10">
+            <div
+              class="bg-white/8 border border-white/10 rounded-2xl p-5 backdrop-blur-sm"
+            >
+              <!-- Card header -->
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <div
+                    class="text-[10px] text-primary-300 font-medium uppercase tracking-widest mb-1"
+                  >
+                    FTMO $100K · Phase 1
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[20px] font-bold text-white font-mono"
+                      >$104,280</span
+                    >
+                    <span
+                      class="text-[10px] font-semibold text-success-400 bg-success-500/15 px-2 py-0.5 rounded-full"
+                      >+4.28%</span
+                    >
+                  </div>
+                </div>
+                <div
+                  class="w-7 h-7 rounded-lg bg-success-500/20 flex items-center justify-center"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <polyline
+                      points="2,8 4.5,5 7,6.5 10,2"
+                      stroke="#1ccf88"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Mini equity SVG -->
+              <svg
+                class="w-full chart-glow mb-4"
+                height="56"
+                viewBox="0 0 280 56"
+                preserveAspectRatio="none"
+              >
+                <defs>
+                  <linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#615a87" stop-opacity="0.3" />
+                    <stop offset="100%" stop-color="#615a87" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <line
+                  x1="0"
+                  y1="44"
+                  x2="280"
+                  y2="44"
+                  stroke="#aea9c6"
+                  stroke-width="0.8"
+                  stroke-dasharray="4,3"
+                  opacity="0.4"
+                />
+                <line
+                  x1="0"
+                  y1="18"
+                  x2="280"
+                  y2="18"
+                  stroke="#1ccf88"
+                  stroke-width="0.8"
+                  stroke-dasharray="4,3"
+                  opacity="0.5"
+                />
+                <path
+                  d="M0,44 C20,42 35,45 55,40 C75,35 90,37 110,31 C130,25 145,33 165,27 C185,21 200,18 220,13 C240,8 260,11 280,6 L280,56 L0,56 Z"
+                  fill="url(#gfill)"
+                />
+                <path
+                  d="M0,44 C20,42 35,45 55,40 C75,35 90,37 110,31 C130,25 145,33 165,27 C185,21 200,18 220,13 C240,8 260,11 280,6"
+                  stroke="#857fa9"
+                  stroke-width="1.8"
+                  fill="none"
+                  stroke-linecap="round"
+                />
+              </svg>
+
+              <!-- Progress bars -->
+              <div class="space-y-2.5">
+                <div>
+                  <div
+                    class="flex justify-between text-[10px] font-medium mb-1"
+                  >
+                    <span class="text-primary-300">Profit Target</span>
+                    <span class="text-white/70 font-mono">4.28% / 10%</span>
+                  </div>
+                  <div class="h-1 bg-white/10 rounded-full">
+                    <div
+                      class="h-full bg-primary-400 rounded-full"
+                      style="width: 43%"
+                    ></div>
+                  </div>
+                </div>
+                <div>
+                  <div
+                    class="flex justify-between text-[10px] font-medium mb-1"
+                  >
+                    <span class="text-primary-300">Trading Days</span>
+                    <span class="text-white/70 font-mono">6 / 10</span>
+                  </div>
+                  <div class="h-1 bg-white/10 rounded-full">
+                    <div
+                      class="h-full bg-gold-400 rounded-full"
+                      style="width: 60%"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom: testimonial / trust -->
+          <div class="space-y-3">
+            <div class="flex items-center gap-2.5">
+              <div
+                class="w-1.5 h-1.5 rounded-full bg-success-400 animate-pulse-dot"
+              ></div>
+              <span class="text-[12px] text-primary-300"
+                >Real-time risk engine · &lt;200ms recalc</span
+              >
+            </div>
+            <div class="flex items-center gap-2.5">
+              <div class="w-1.5 h-1.5 rounded-full bg-primary-400"></div>
+              <span class="text-[12px] text-primary-300"
+                >FTMO, MyFundedFx, TopStep templates</span
+              >
+            </div>
+            <div class="flex items-center gap-2.5">
+              <div class="w-1.5 h-1.5 rounded-full bg-gold-400"></div>
+              <span class="text-[12px] text-primary-300"
+                >Deep analytics — 8 performance dimensions</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ RIGHT PANEL: FORM ══ -->
+        <div
+          class="flex-1 flex flex-col justify-center items-center px-5 py-10 lg:py-0 bg-white lg:bg-neutral-50"
+        >
+          <!-- Mobile brand (shown only on mobile) -->
+          <div class="lg:hidden flex flex-col items-center mb-8">
+            <div
+              class="w-10 h-10 rounded-xl bg-primary-800 flex items-center justify-center mb-3"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <polyline
@@ -218,1034 +427,609 @@
                 <circle cx="15" cy="6" r="1.5" fill="#1ccf88" />
               </svg>
             </div>
-            <span
-              class="font-semibold text-primary-900 tracking-tight text-[15px]"
-              >TradeS<span class="text-primary-500">im</span></span
-            >
+            <span class="font-bold text-primary-900 text-[15px]">TradeSim</span>
           </div>
 
-          <!-- Nav links (desktop) -->
-          <div
-            class="hidden md:flex items-center gap-8 text-[13.5px] font-medium text-neutral-500"
-          >
-            <a href="#features" class="hover:text-primary-800 transition-colors"
-              >Features</a
-            >
-            <a href="#rules" class="hover:text-primary-800 transition-colors"
-              >Challenge Rules</a
-            >
-            <a
-              href="#analytics"
-              class="hover:text-primary-800 transition-colors"
-              >Analytics</a
-            >
-            <a
-              href="#templates"
-              class="hover:text-primary-800 transition-colors"
-              >Templates</a
-            >
-          </div>
-
-          <!-- CTA -->
-          <div class="flex items-center gap-2.5">
-            <button
-              class="hidden md:block text-[13.5px] font-medium text-neutral-700 hover:text-primary-800 transition-colors px-4 py-2"
-            >
-              Log In
-            </button>
-            <button
-              class="text-[13.5px] font-semibold bg-primary-800 text-neutral-50 px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Get Started Free
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <!-- ─── HERO ─── -->
-      <section
-        class="relative min-h-screen flex items-center overflow-hidden pt-16 hero-noise"
-      >
-        <!-- Background circles -->
-        <div
-          class="absolute -top-32 -right-48 w-[600px] h-[600px] rounded-full bg-primary-100/60 blur-3xl pointer-events-none"
-        ></div>
-        <div
-          class="absolute bottom-0 -left-32 w-[400px] h-[400px] rounded-full bg-success-50/70 blur-3xl pointer-events-none"
-        ></div>
-
-        <div
-          class="max-w-6xl mx-auto px-6 w-full grid md:grid-cols-2 gap-12 items-center py-20"
-        >
-          <!-- Left: copy -->
-          <div class="animate-fade-up">
-            <!-- Badge -->
-            <div
-              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary-200 bg-primary-50 text-primary-600 text-[12px] font-medium mb-7"
-            >
-              <span
-                class="w-1.5 h-1.5 rounded-full bg-success-500 pulse-dot inline-block"
-              ></span>
-              Prop Firm Challenge Simulator
-            </div>
-
-            <h1
-              class="text-[2.75rem] md:text-[3.5rem] font-extrabold leading-[1.08] tracking-tight text-primary-900 mb-6"
-            >
-              Master the<br />
-              <span class="gradient-text">Prop Firm Rules.</span><br />
-              Pass with Confidence.
-            </h1>
-
-            <p
-              class="text-neutral-500 text-[16px] leading-relaxed mb-8 max-w-md"
-            >
-              Simulate any prop firm challenge — FTMO, MyFundedFx, TopStep —
-              with a real-time risk engine, equity tracking, and deep trade
-              analytics. No live capital at risk.
-            </p>
-
-            <div class="flex items-center gap-3 flex-wrap">
-              <button
-                class="bg-primary-800 text-neutral-50 text-[14px] font-semibold px-6 py-3 rounded-xl hover:bg-primary-700 transition-colors shadow-md shadow-primary-900/10"
-              >
-                Start Simulating Free
-              </button>
-              <button
-                class="border border-neutral-300 bg-white text-neutral-700 text-[14px] font-medium px-6 py-3 rounded-xl hover:border-primary-300 hover:text-primary-700 transition-colors"
-              >
-                See How It Works
-              </button>
-            </div>
-
-            <!-- Stats row -->
-            <div class="mt-10 flex items-center gap-6 flex-wrap">
-              <div>
-                <div class="text-[22px] font-bold text-primary-900 font-mono">
-                  20
-                </div>
-                <div class="text-[12px] text-neutral-400 font-medium">
-                  Active Sims/User
-                </div>
-              </div>
-              <div class="w-px h-8 bg-neutral-200"></div>
-              <div>
-                <div class="text-[22px] font-bold text-primary-900 font-mono">
-                  4+
-                </div>
-                <div class="text-[12px] text-neutral-400 font-medium">
-                  Drawdown Types
-                </div>
-              </div>
-              <div class="w-px h-8 bg-neutral-200"></div>
-              <div>
-                <div class="text-[22px] font-bold text-success-600 font-mono">
-                  &lt;200ms
-                </div>
-                <div class="text-[12px] text-neutral-400 font-medium">
-                  Risk Engine Speed
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Right: mock dashboard card -->
-          <div class="animate-fade-up-delay2 relative">
-            <!-- Main card -->
-            <div
-              class="glass-card rounded-2xl border border-neutral-200 shadow-xl shadow-primary-900/8 overflow-hidden"
-            >
-              <!-- Card header -->
-              <div
-                class="px-5 pt-5 pb-4 border-b border-neutral-100 flex items-center justify-between"
-              >
-                <div>
-                  <div
-                    class="text-[11px] text-neutral-400 font-medium uppercase tracking-widest mb-1"
-                  >
-                    FTMO $100K — Phase 1
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span
-                      class="text-[22px] font-bold text-primary-900 font-mono count-anim"
-                      >$104,280</span
-                    >
-                    <span
-                      class="text-[11px] font-semibold text-success-600 bg-success-50 px-2 py-0.5 rounded-full"
-                      >+4.28%</span
-                    >
-                  </div>
-                </div>
-                <div
-                  class="w-8 h-8 rounded-lg bg-success-50 border border-success-200 flex items-center justify-center"
+          <!-- Form card wrapper -->
+          <div class="w-full max-w-[400px]">
+            <!-- ─── LOGIN FORM ─── -->
+            <div v-if="mode === 'login'" class="animate-fade-in">
+              <div class="mb-8">
+                <h2
+                  class="text-[1.75rem] font-extrabold text-primary-900 tracking-tight mb-1.5"
                 >
-                  <span class="text-success-600 text-xs font-bold">✓</span>
-                </div>
+                  Welcome back
+                </h2>
+                <p class="text-neutral-400 text-[13.5px]">
+                  Log in to your TradeSim account
+                </p>
               </div>
 
-              <!-- Equity chart -->
-              <div class="px-5 py-4">
-                <svg
-                  class="w-full chart-glow"
-                  height="90"
-                  viewBox="0 0 340 90"
-                  preserveAspectRatio="none"
+              <!-- Social buttons -->
+              <div class="flex gap-3 mb-6">
+                <button
+                  class="flex-1 flex items-center justify-center gap-2 border border-neutral-200 rounded-xl py-2.5 text-[13px] font-medium text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
                 >
-                  <defs>
-                    <linearGradient id="eq-fill" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset="0%"
-                        stop-color="#615a87"
-                        stop-opacity="0.18"
-                      />
-                      <stop
-                        offset="100%"
-                        stop-color="#615a87"
-                        stop-opacity="0"
-                      />
-                    </linearGradient>
-                  </defs>
-                  <!-- Floor line -->
-                  <line
-                    x1="0"
-                    y1="72"
-                    x2="340"
-                    y2="72"
-                    stroke="#d1cede"
-                    stroke-width="1"
-                    stroke-dasharray="5,4"
-                  />
-                  <!-- Equity path fill -->
-                  <path
-                    d="M0,70 C30,68 50,72 70,65 C90,58 110,60 130,52 C150,44 160,55 180,48 C200,41 220,38 240,30 C260,22 280,28 300,20 C315,14 330,16 340,10 L340,90 L0,90 Z"
-                    fill="url(#eq-fill)"
-                  />
-                  <!-- Equity path stroke -->
-                  <path
-                    d="M0,70 C30,68 50,72 70,65 C90,58 110,60 130,52 C150,44 160,55 180,48 C200,41 220,38 240,30 C260,22 280,28 300,20 C315,14 330,16 340,10"
-                    stroke="#615a87"
-                    stroke-width="2.2"
-                    fill="none"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <!-- Profit target dotted line -->
-                  <line
-                    x1="0"
-                    y1="30"
-                    x2="340"
-                    y2="30"
-                    stroke="#1ccf88"
-                    stroke-width="1"
-                    stroke-dasharray="5,4"
-                    opacity="0.7"
-                  />
-                  <!-- Label -->
-                  <text
-                    x="4"
-                    y="26"
-                    font-size="8"
-                    fill="#1ccf88"
-                    font-family="JetBrains Mono"
-                    opacity="0.9"
-                  >
-                    target
-                  </text>
-                  <text
-                    x="4"
-                    y="68"
-                    font-size="8"
-                    fill="#aea9c6"
-                    font-family="JetBrains Mono"
-                  >
-                    floor
-                  </text>
-                </svg>
-              </div>
-
-              <!-- Progress bars -->
-              <div class="px-5 pb-5 space-y-3">
-                <div>
-                  <div
-                    class="flex justify-between text-[11px] font-medium mb-1.5"
-                  >
-                    <span class="text-neutral-500">Profit Target</span>
-                    <span class="text-primary-700 font-mono">4.28% / 10%</span>
-                  </div>
-                  <div
-                    class="h-1.5 bg-neutral-100 rounded-full overflow-hidden"
-                  >
-                    <div
-                      class="progress-fill h-full bg-primary-500 rounded-full"
-                      style="--fill: 43%"
-                    ></div>
-                  </div>
-                </div>
-                <div>
-                  <div
-                    class="flex justify-between text-[11px] font-medium mb-1.5"
-                  >
-                    <span class="text-neutral-500">Trading Days</span>
-                    <span class="text-primary-700 font-mono">6 / 10 days</span>
-                  </div>
-                  <div
-                    class="h-1.5 bg-neutral-100 rounded-full overflow-hidden"
-                  >
-                    <div
-                      class="progress-fill h-full bg-gold-500 rounded-full"
-                      style="--fill: 60%"
-                    ></div>
-                  </div>
-                </div>
-                <div>
-                  <div
-                    class="flex justify-between text-[11px] font-medium mb-1.5"
-                  >
-                    <span class="text-neutral-500">Daily Drawdown Used</span>
-                    <span class="text-success-600 font-mono">0.8% / 5%</span>
-                  </div>
-                  <div
-                    class="h-1.5 bg-neutral-100 rounded-full overflow-hidden"
-                  >
-                    <div
-                      class="progress-fill h-full bg-success-400 rounded-full"
-                      style="--fill: 16%"
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Floating mini card: last trade -->
-            <div
-              class="absolute -bottom-4 -left-6 glass-card rounded-xl border border-neutral-200 shadow-lg px-4 py-3 flex items-center gap-3 hidden md:flex"
-            >
-              <div
-                class="w-7 h-7 rounded-lg bg-success-50 flex items-center justify-center text-success-600"
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <polyline
-                    points="2,10 5,6 8,8 12,3"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <polyline
-                    points="10,3 12,3 12,5"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </div>
-              <div>
-                <div class="text-[11px] font-semibold text-primary-900">
-                  XAUUSD LONG
-                </div>
-                <div class="text-[10px] text-success-600 font-mono font-medium">
-                  +$320 · R:R 2.4
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ─── FEATURE HIGHLIGHTS ─── -->
-      <section id="features" class="py-20 max-w-6xl mx-auto px-6">
-        <div class="text-center mb-14">
-          <div
-            class="text-[12px] font-semibold text-primary-500 uppercase tracking-[0.12em] mb-3"
-          >
-            Everything You Need
-          </div>
-          <h2
-            class="text-[2.2rem] font-extrabold text-primary-900 tracking-tight leading-tight"
-          >
-            Built around how<br />prop challenges actually work
-          </h2>
-        </div>
-
-        <div class="grid md:grid-cols-3 gap-5">
-          <!-- Feature 1 -->
-          <div
-            class="feature-card bg-white rounded-2xl border border-neutral-200 p-6"
-            v-for="f in features"
-            :key="f.title"
-          >
-            <div
-              class="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
-              :class="f.iconBg"
-            >
-              <span v-html="f.icon" class="text-lg"></span>
-            </div>
-            <h3 class="text-[15px] font-semibold text-primary-900 mb-2">
-              {{ f.title }}
-            </h3>
-            <p class="text-[13.5px] text-neutral-500 leading-relaxed">
-              {{ f.desc }}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <!-- ─── RULES ENGINE ─── -->
-      <section id="rules" class="py-20 bg-primary-950 relative overflow-hidden">
-        <div
-          class="absolute inset-0 hero-noise pointer-events-none opacity-50"
-        ></div>
-        <div
-          class="absolute top-0 right-0 w-96 h-96 rounded-full bg-primary-700/20 blur-3xl pointer-events-none"
-        ></div>
-
-        <div class="max-w-6xl mx-auto px-6 relative z-10">
-          <div class="grid md:grid-cols-2 gap-16 items-center">
-            <!-- Left: copy -->
-            <div>
-              <div
-                class="text-[12px] font-semibold text-primary-400 uppercase tracking-[0.12em] mb-3"
-              >
-                Risk Engine
-              </div>
-              <h2
-                class="text-[2.2rem] font-extrabold text-neutral-50 tracking-tight leading-tight mb-5"
-              >
-                Real-Time Drawdown.<br />
-                <span class="text-primary-300">Zero Surprises.</span>
-              </h2>
-              <p class="text-neutral-400 text-[15px] leading-relaxed mb-8">
-                Every trade mutation triggers instant recalculation of your
-                equity curve, high-water mark, and all drawdown rules.
-                Violations are detected the moment they happen — not at end of
-                day.
-              </p>
-
-              <div class="space-y-4">
-                <div
-                  v-for="rule in drawdownRules"
-                  :key="rule.type"
-                  class="flex items-start gap-4"
-                >
-                  <div
-                    class="w-2 h-2 rounded-full mt-2 flex-shrink-0"
-                    :class="rule.dot"
-                  ></div>
-                  <div>
-                    <div class="text-[14px] font-semibold text-neutral-200">
-                      {{ rule.type }}
-                    </div>
-                    <div
-                      class="text-[13px] text-neutral-500 leading-relaxed mt-0.5"
-                    >
-                      {{ rule.desc }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right: code card -->
-            <div
-              class="bg-primary-900/60 border border-primary-700/50 rounded-2xl overflow-hidden"
-            >
-              <div
-                class="flex items-center gap-2 px-4 py-3 border-b border-primary-700/40"
-              >
-                <div class="w-3 h-3 rounded-full bg-red-500/70"></div>
-                <div class="w-3 h-3 rounded-full bg-gold-400/70"></div>
-                <div class="w-3 h-3 rounded-full bg-success-500/70"></div>
-                <span class="ml-3 text-[11px] font-mono text-primary-400"
-                  >account_status.json</span
-                >
-              </div>
-              <pre
-                class="p-5 text-[12px] font-mono leading-relaxed text-primary-200 overflow-x-auto no-scrollbar"
-              ><code><span class="text-neutral-500">{</span>
-  <span class="text-gold-400">"status"</span>: <span class="text-success-400">"ACTIVE"</span>,
-  <span class="text-gold-400">"equity"</span>: <span class="text-primary-300">104280.00</span>,
-  <span class="text-gold-400">"drawdown_used_pct"</span>: <span class="text-primary-300">2.5</span>,
-  <span class="text-gold-400">"drawdown_remaining_pct"</span>: <span class="text-success-400">7.5</span>,
-  <span class="text-gold-400">"daily_drawdown_used_pct"</span>: <span class="text-primary-300">0.8</span>,
-  <span class="text-gold-400">"profit_achieved_pct"</span>: <span class="text-success-400">4.28</span>,
-  <span class="text-gold-400">"trading_days_completed"</span>: <span class="text-primary-300">6</span>,
-  <span class="text-gold-400">"trading_days_required"</span>: <span class="text-primary-300">10</span>,
-  <span class="text-gold-400">"consistency_score_pct"</span>: <span class="text-primary-300">22.3</span>,
-  <span class="text-gold-400">"violations"</span>: <span class="text-success-400">[]</span>
-<span class="text-neutral-500">}</span></code></pre>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ─── TRADING JOURNAL ─── -->
-      <section class="py-20 max-w-6xl mx-auto px-6">
-        <div class="grid md:grid-cols-2 gap-16 items-center">
-          <!-- Trade journal mock -->
-          <div class="space-y-2.5 order-2 md:order-1">
-            <!-- Table header -->
-            <div
-              class="grid grid-cols-5 px-4 py-2 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider"
-            >
-              <span>Symbol</span><span>Dir</span><span>P&amp;L</span
-              ><span>R:R</span><span>Session</span>
-            </div>
-            <div
-              v-for="t in trades"
-              :key="t.sym"
-              class="bg-white rounded-xl border border-neutral-200 grid grid-cols-5 px-4 py-3.5 items-center feature-card"
-            >
-              <span class="text-[13px] font-semibold text-primary-900 font-mono"
-                >{{ t.sym }}</span
-              >
-              <span
-                class="text-[11px] font-bold px-2 py-0.5 rounded-md inline-block w-fit"
-                :class="t.dir === 'L' ? 'bg-success-50 text-success-700' : 'bg-red-50 text-red-600'"
-                >{{ t.dir === 'L' ? 'LONG' : 'SHORT' }}</span
-              >
-              <span
-                class="text-[13px] font-mono font-semibold"
-                :class="t.pnl > 0 ? 'text-success-600' : 'text-red-500'"
-                >{{ t.pnl > 0 ? '+' : '' }}${{ t.pnl }}</span
-              >
-              <span class="text-[13px] font-mono text-neutral-600"
-                >{{ t.rr }}</span
-              >
-              <span class="text-[11px] text-neutral-400 font-medium"
-                >{{ t.session }}</span
-              >
-            </div>
-            <!-- Search/filter bar -->
-            <div class="flex items-center gap-2 pt-1">
-              <div
-                class="flex-1 bg-white border border-neutral-200 rounded-lg px-3 py-2 flex items-center gap-2"
-              >
-                <svg
-                  class="w-3.5 h-3.5 text-neutral-400"
-                  fill="none"
-                  viewBox="0 0 16 16"
-                >
-                  <circle
-                    cx="7"
-                    cy="7"
-                    r="4.5"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                  />
-                  <line
-                    x1="10.5"
-                    y1="10.5"
-                    x2="14"
-                    y2="14"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                  />
-                </svg>
-                <span class="text-[12px] text-neutral-400">Search notes…</span>
-              </div>
-              <div
-                class="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-[12px] text-neutral-500"
-              >
-                Filter ▾
-              </div>
-              <div
-                class="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-[12px] text-neutral-500"
-              >
-                Sort ▾
-              </div>
-            </div>
-          </div>
-
-          <!-- Copy -->
-          <div class="order-1 md:order-2">
-            <div
-              class="text-[12px] font-semibold text-primary-500 uppercase tracking-[0.12em] mb-3"
-            >
-              Trading Journal
-            </div>
-            <h2
-              class="text-[2.2rem] font-extrabold text-primary-900 tracking-tight leading-tight mb-5"
-            >
-              Log trades.<br />
-              Find your edge.
-            </h2>
-            <p class="text-neutral-500 text-[15px] leading-relaxed mb-6">
-              Record every closed trade with entry/exit, lot size, session, and
-              screenshots. Filter by symbol, strategy, or tags. Let the data
-              tell you which setups are actually working.
-            </p>
-            <div class="space-y-3">
-              <div
-                v-for="j in journalFeatures"
-                :key="j"
-                class="flex items-center gap-3 text-[14px] text-neutral-600"
-              >
-                <div
-                  class="w-5 h-5 rounded-full bg-success-50 border border-success-200 flex items-center justify-center flex-shrink-0"
-                >
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                    <polyline
-                      points="2,5.5 4,7.5 8,3"
-                      stroke="#17ab70"
-                      stroke-width="1.6"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                  <!-- Google -->
+                  <svg width="16" height="16" viewBox="0 0 16 16">
+                    <path
+                      d="M15.68 8.18c0-.57-.05-1.11-.14-1.64H8v3.1h4.31a3.68 3.68 0 01-1.6 2.41v2h2.59c1.52-1.4 2.39-3.46 2.39-5.87z"
+                      fill="#4285F4"
+                    />
+                    <path
+                      d="M8 16c2.16 0 3.97-.72 5.3-1.94l-2.59-2a4.8 4.8 0 01-7.15-2.52H.96v2.07A8 8 0 008 16z"
+                      fill="#34A853"
+                    />
+                    <path
+                      d="M3.56 9.54A4.8 4.8 0 013.3 8c0-.54.09-1.06.26-1.54V4.39H.96A8 8 0 000 8c0 1.29.31 2.51.96 3.61l2.6-2.07z"
+                      fill="#FBBC05"
+                    />
+                    <path
+                      d="M8 3.18c1.22 0 2.31.42 3.17 1.24l2.38-2.38A8 8 0 00.96 4.39l2.6 2.07A4.77 4.77 0 018 3.18z"
+                      fill="#EA4335"
                     />
                   </svg>
-                </div>
-                {{ j }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ─── ANALYTICS ─── -->
-      <section id="analytics" class="py-20 bg-neutral-100/60">
-        <div class="max-w-6xl mx-auto px-6">
-          <div class="text-center mb-14">
-            <div
-              class="text-[12px] font-semibold text-primary-500 uppercase tracking-[0.12em] mb-3"
-            >
-              Analytics
-            </div>
-            <h2
-              class="text-[2.2rem] font-extrabold text-primary-900 tracking-tight"
-            >
-              8 dimensions of performance
-            </h2>
-          </div>
-
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div
-              v-for="stat in analyticsStats"
-              :key="stat.label"
-              class="bg-white rounded-2xl border border-neutral-200 p-5 feature-card"
-            >
-              <div
-                class="text-[26px] font-extrabold font-mono mb-1"
-                :class="stat.color"
-              >
-                {{ stat.value }}
-              </div>
-              <div class="text-[12px] font-semibold text-neutral-700 mb-1">
-                {{ stat.label }}
-              </div>
-              <div class="text-[11.5px] text-neutral-400 leading-snug">
-                {{ stat.sub }}
-              </div>
-            </div>
-          </div>
-
-          <!-- Calendar heatmap visual -->
-          <div class="mt-8 bg-white rounded-2xl border border-neutral-200 p-6">
-            <div
-              class="text-[12px] font-semibold text-neutral-500 uppercase tracking-wider mb-4"
-            >
-              Daily P&amp;L Calendar — June 2026
-            </div>
-            <div class="grid grid-cols-7 gap-1.5">
-              <div
-                v-for="d in calendarDays"
-                :key="d.day"
-                class="aspect-square rounded-lg flex items-center justify-center text-[10px] font-mono font-medium transition-transform hover:scale-110 cursor-default"
-                :class="d.cls"
-                :title="d.label"
-              >
-                {{ d.day || '' }}
-              </div>
-            </div>
-            <div class="flex items-center gap-3 mt-4">
-              <span class="text-[11px] text-neutral-400">Loss</span>
-              <div class="flex gap-1">
-                <div class="w-4 h-2 rounded bg-red-400"></div>
-                <div class="w-4 h-2 rounded bg-red-200"></div>
-                <div class="w-4 h-2 rounded bg-neutral-200"></div>
-                <div class="w-4 h-2 rounded bg-success-200"></div>
-                <div class="w-4 h-2 rounded bg-success-400"></div>
-              </div>
-              <span class="text-[11px] text-neutral-400">Gain</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ─── TEMPLATES ─── -->
-      <section id="templates" class="py-20 max-w-6xl mx-auto px-6">
-        <div class="text-center mb-14">
-          <div
-            class="text-[12px] font-semibold text-primary-500 uppercase tracking-[0.12em] mb-3"
-          >
-            Challenge Templates
-          </div>
-          <h2
-            class="text-[2.2rem] font-extrabold text-primary-900 tracking-tight"
-          >
-            Start with any prop firm's rules
-          </h2>
-          <p class="text-neutral-500 text-[15px] mt-3 max-w-md mx-auto">
-            Pre-configured rule sets based on real prop firms. Or build your own
-            from scratch.
-          </p>
-        </div>
-
-        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div
-            v-for="t in templates"
-            :key="t.name"
-            class="feature-card bg-white rounded-2xl border border-neutral-200 p-5"
-          >
-            <div class="flex items-center justify-between mb-4">
-              <span class="text-[13px] font-bold text-primary-900"
-                >{{ t.name }}</span
-              >
-              <span
-                class="text-[10px] font-semibold text-primary-500 bg-primary-50 px-2 py-1 rounded-full"
-                >{{ t.account }}</span
-              >
-            </div>
-            <div class="space-y-2">
-              <div class="flex justify-between text-[12px]">
-                <span class="text-neutral-400">Max DD</span>
-                <span class="font-mono font-semibold text-red-500"
-                  >{{ t.maxDD }}</span
+                  Google
+                </button>
+                <button
+                  class="flex-1 flex items-center justify-center gap-2 border border-neutral-200 rounded-xl py-2.5 text-[13px] font-medium text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
                 >
+                  <!-- Apple -->
+                  <svg
+                    width="14"
+                    height="16"
+                    viewBox="0 0 14 16"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M13.23 11.56a7.31 7.31 0 01-.73 1.31c-.38.55-.7.93-.94 1.14-.38.35-.78.53-1.22.53-.31 0-.69-.09-1.12-.27-.43-.18-.83-.27-1.2-.27-.38 0-.79.09-1.23.27-.44.18-.8.27-1.08.28-.42.01-.83-.17-1.23-.54-.26-.22-.59-.62-.98-1.19A7.7 7.7 0 011 11.42 7.13 7.13 0 01.5 8.8c0-1 .22-1.86.65-2.59.34-.58.8-1.04 1.37-1.38a3.7 3.7 0 011.86-.52c.37 0 .85.11 1.46.34.61.23 1 .34 1.18.34.13 0 .57-.13 1.32-.4.71-.24 1.3-.35 1.8-.32 1.33.1 2.33.62 2.98 1.55-1.19.72-1.78 1.73-1.77 3.02 0 1.01.38 1.85 1.13 2.52zM10 .32c0 .79-.29 1.53-.86 2.2-.69.81-1.53 1.28-2.43 1.21a2.44 2.44 0 01-.02-.3c0-.76.33-1.57.91-2.23.29-.33.66-.61 1.12-.82.45-.21.88-.32 1.28-.33.01.09.01.18 0 .27z"
+                    />
+                  </svg>
+                  Apple
+                </button>
               </div>
-              <div class="flex justify-between text-[12px]">
-                <span class="text-neutral-400">Daily DD</span>
-                <span class="font-mono font-semibold text-gold-600"
-                  >{{ t.dailyDD }}</span
-                >
-              </div>
-              <div class="flex justify-between text-[12px]">
-                <span class="text-neutral-400">Target</span>
-                <span class="font-mono font-semibold text-success-600"
-                  >{{ t.target }}</span
-                >
-              </div>
-              <div class="flex justify-between text-[12px]">
-                <span class="text-neutral-400">Min Days</span>
-                <span class="font-mono font-semibold text-primary-600"
-                  >{{ t.minDays }}</span
-                >
-              </div>
-            </div>
-            <button
-              class="mt-4 w-full text-[12px] font-semibold text-primary-700 border border-primary-200 rounded-lg py-2 hover:bg-primary-50 transition-colors"
-            >
-              Use Template →
-            </button>
-          </div>
-        </div>
-      </section>
 
-      <!-- ─── CTA BANNER ─── -->
-      <section class="py-16 max-w-6xl mx-auto px-6">
-        <div
-          class="bg-primary-800 rounded-3xl p-10 md:p-14 relative overflow-hidden"
-        >
-          <div
-            class="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-primary-600/30 blur-3xl pointer-events-none"
-          ></div>
-          <div class="relative z-10 text-center">
-            <h2
-              class="text-[2rem] md:text-[2.6rem] font-extrabold text-neutral-50 tracking-tight mb-4"
-            >
-              Ready to pass your<br />next challenge?
-            </h2>
-            <p class="text-primary-300 text-[15px] mb-8 max-w-md mx-auto">
-              Simulate before you trade. Build discipline. Understand your rules
-              deeply. Then go live with confidence.
-            </p>
-            <button
-              class="bg-neutral-50 text-primary-900 text-[14px] font-bold px-8 py-3.5 rounded-xl hover:bg-white transition-colors shadow-lg"
-            >
-              Create Your First Simulation →
-            </button>
-          </div>
-        </div>
-      </section>
+              <!-- Divider -->
+              <div class="flex items-center gap-3 mb-6">
+                <div class="flex-1 h-px bg-neutral-200"></div>
+                <span class="text-[12px] text-neutral-400 font-medium">OR</span>
+                <div class="flex-1 h-px bg-neutral-200"></div>
+              </div>
 
-      <!-- ─── FOOTER ─── -->
-      <footer class="border-t border-neutral-200 py-8">
-        <div
-          class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4"
-        >
-          <div class="flex items-center gap-2">
-            <div
-              class="w-6 h-6 rounded-md bg-primary-800 flex items-center justify-center"
-            >
-              <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
-                <polyline
-                  points="1,12 5,7 8,9 12,4 15,6"
-                  stroke="#d1cede"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  fill="none"
+              <!-- Email -->
+              <div class="mb-4">
+                <label
+                  class="block text-[12.5px] font-semibold text-neutral-700 mb-1.5"
+                  >Email address</label
+                >
+                <input
+                  v-model="login.email"
+                  type="email"
+                  placeholder="Enter your email address"
+                  class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13.5px] text-neutral-900 placeholder-neutral-400 bg-white"
                 />
-                <circle cx="15" cy="6" r="2" fill="#1ccf88" />
-              </svg>
+              </div>
+
+              <!-- Password -->
+              <div class="mb-2">
+                <label
+                  class="block text-[12.5px] font-semibold text-neutral-700 mb-1.5"
+                  >Password</label
+                >
+                <div class="relative">
+                  <input
+                    v-model="login.password"
+                    :type="login.showPass ? 'text' : 'password'"
+                    placeholder="Enter your password"
+                    class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13.5px] text-neutral-900 placeholder-neutral-400 bg-white pr-11"
+                  />
+                  <button
+                    @click="login.showPass = !login.showPass"
+                    class="pass-toggle absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+                  >
+                    <svg
+                      v-if="!login.showPass"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <path
+                        d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"
+                        stroke="currentColor"
+                        stroke-width="1.4"
+                      />
+                      <circle
+                        cx="8"
+                        cy="8"
+                        r="2"
+                        stroke="currentColor"
+                        stroke-width="1.4"
+                      />
+                    </svg>
+                    <svg
+                      v-else
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <path
+                        d="M2 2l12 12M6.5 6.5A2 2 0 009.5 9.5M1 8s2.5-5 7-5c1.1 0 2.1.24 3 .66M15 8s-.7 1.4-2 2.5"
+                        stroke="currentColor"
+                        stroke-width="1.4"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex justify-end mb-6">
+                <button
+                  class="text-[12.5px] font-medium text-primary-600 hover:text-primary-500 transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              <!-- Submit -->
+              <button
+                @click="handleLogin"
+                class="w-full bg-primary-800 text-white font-semibold text-[14px] py-3.5 rounded-xl hover:bg-primary-700 transition-colors shadow-sm shadow-primary-900/20 mb-4"
+              >
+                Log In
+              </button>
+
+              <!-- Switch -->
+              <p class="text-center text-[13px] text-neutral-400">
+                Don't have an account?
+                <button
+                  @click="switchMode"
+                  class="font-semibold text-primary-700 hover:text-primary-500 transition-colors ml-1"
+                >
+                  Sign up
+                </button>
+              </p>
             </div>
-            <span class="text-[13px] font-semibold text-primary-900"
-              >TradeSim</span
-            >
+
+            <!-- ─── REGISTER FORM ─── -->
+            <div v-else class="animate-fade-in">
+              <div class="mb-8">
+                <h2
+                  class="text-[1.75rem] font-extrabold text-primary-900 tracking-tight mb-1.5"
+                >
+                  Create an account
+                </h2>
+                <p class="text-neutral-400 text-[13.5px]">
+                  Start simulating your prop firm challenge today
+                </p>
+              </div>
+
+              <!-- Social buttons -->
+              <div class="flex gap-3 mb-6">
+                <button
+                  class="flex-1 flex items-center justify-center gap-2 border border-neutral-200 rounded-xl py-2.5 text-[13px] font-medium text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16">
+                    <path
+                      d="M15.68 8.18c0-.57-.05-1.11-.14-1.64H8v3.1h4.31a3.68 3.68 0 01-1.6 2.41v2h2.59c1.52-1.4 2.39-3.46 2.39-5.87z"
+                      fill="#4285F4"
+                    />
+                    <path
+                      d="M8 16c2.16 0 3.97-.72 5.3-1.94l-2.59-2a4.8 4.8 0 01-7.15-2.52H.96v2.07A8 8 0 008 16z"
+                      fill="#34A853"
+                    />
+                    <path
+                      d="M3.56 9.54A4.8 4.8 0 013.3 8c0-.54.09-1.06.26-1.54V4.39H.96A8 8 0 000 8c0 1.29.31 2.51.96 3.61l2.6-2.07z"
+                      fill="#FBBC05"
+                    />
+                    <path
+                      d="M8 3.18c1.22 0 2.31.42 3.17 1.24l2.38-2.38A8 8 0 00.96 4.39l2.6 2.07A4.77 4.77 0 018 3.18z"
+                      fill="#EA4335"
+                    />
+                  </svg>
+                  Google
+                </button>
+                <button
+                  class="flex-1 flex items-center justify-center gap-2 border border-neutral-200 rounded-xl py-2.5 text-[13px] font-medium text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
+                >
+                  <svg
+                    width="14"
+                    height="16"
+                    viewBox="0 0 14 16"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M13.23 11.56a7.31 7.31 0 01-.73 1.31c-.38.55-.7.93-.94 1.14-.38.35-.78.53-1.22.53-.31 0-.69-.09-1.12-.27-.43-.18-.83-.27-1.2-.27-.38 0-.79.09-1.23.27-.44.18-.8.27-1.08.28-.42.01-.83-.17-1.23-.54-.26-.22-.59-.62-.98-1.19A7.7 7.7 0 011 11.42 7.13 7.13 0 01.5 8.8c0-1 .22-1.86.65-2.59.34-.58.8-1.04 1.37-1.38a3.7 3.7 0 011.86-.52c.37 0 .85.11 1.46.34.61.23 1 .34 1.18.34.13 0 .57-.13 1.32-.4.71-.24 1.3-.35 1.8-.32 1.33.1 2.33.62 2.98 1.55-1.19.72-1.78 1.73-1.77 3.02 0 1.01.38 1.85 1.13 2.52zM10 .32c0 .79-.29 1.53-.86 2.2-.69.81-1.53 1.28-2.43 1.21a2.44 2.44 0 01-.02-.3c0-.76.33-1.57.91-2.23.29-.33.66-.61 1.12-.82.45-.21.88-.32 1.28-.33.01.09.01.18 0 .27z"
+                    />
+                  </svg>
+                  Apple
+                </button>
+              </div>
+
+              <!-- Divider -->
+              <div class="flex items-center gap-3 mb-5">
+                <div class="flex-1 h-px bg-neutral-200"></div>
+                <span class="text-[12px] text-neutral-400 font-medium">OR</span>
+                <div class="flex-1 h-px bg-neutral-200"></div>
+              </div>
+
+              <!-- Display Name -->
+              <div class="mb-3.5">
+                <label
+                  class="block text-[12.5px] font-semibold text-neutral-700 mb-1.5"
+                  >Display name</label
+                >
+                <input
+                  v-model="register.name"
+                  type="text"
+                  placeholder="e.g. John Trader"
+                  class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13.5px] text-neutral-900 placeholder-neutral-400 bg-white"
+                />
+              </div>
+
+              <!-- Email -->
+              <div class="mb-3.5">
+                <label
+                  class="block text-[12.5px] font-semibold text-neutral-700 mb-1.5"
+                  >Email address</label
+                >
+                <input
+                  v-model="register.email"
+                  type="email"
+                  placeholder="Enter your email address"
+                  class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13.5px] text-neutral-900 placeholder-neutral-400 bg-white"
+                />
+              </div>
+
+              <!-- Password -->
+              <div class="mb-3.5">
+                <label
+                  class="block text-[12.5px] font-semibold text-neutral-700 mb-1.5"
+                  >Password</label
+                >
+                <div class="relative">
+                  <input
+                    v-model="register.password"
+                    :type="register.showPass ? 'text' : 'password'"
+                    placeholder="Minimum 8 characters"
+                    class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13.5px] text-neutral-900 placeholder-neutral-400 bg-white pr-11"
+                  />
+                  <button
+                    @click="register.showPass = !register.showPass"
+                    class="pass-toggle absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+                  >
+                    <svg
+                      v-if="!register.showPass"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <path
+                        d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"
+                        stroke="currentColor"
+                        stroke-width="1.4"
+                      />
+                      <circle
+                        cx="8"
+                        cy="8"
+                        r="2"
+                        stroke="currentColor"
+                        stroke-width="1.4"
+                      />
+                    </svg>
+                    <svg
+                      v-else
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <path
+                        d="M2 2l12 12M6.5 6.5A2 2 0 009.5 9.5M1 8s2.5-5 7-5c1.1 0 2.1.24 3 .66M15 8s-.7 1.4-2 2.5"
+                        stroke="currentColor"
+                        stroke-width="1.4"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <!-- Password strength -->
+                <div
+                  v-if="register.password.length > 0"
+                  class="mt-2 flex gap-1"
+                >
+                  <div
+                    v-for="i in 4"
+                    :key="i"
+                    class="flex-1 h-1 rounded-full transition-colors duration-300"
+                    :class="i <= passwordStrength ? strengthColor : 'bg-neutral-200'"
+                  ></div>
+                </div>
+                <p
+                  v-if="register.password.length > 0"
+                  class="text-[11px] mt-1"
+                  :class="strengthTextColor"
+                >
+                  {{ strengthLabel }}
+                </p>
+              </div>
+
+              <!-- Currency + Timezone side by side -->
+              <div class="grid grid-cols-2 gap-3 mb-5">
+                <!-- Currency -->
+                <div>
+                  <label
+                    class="block text-[12.5px] font-semibold text-neutral-700 mb-1.5"
+                    >Currency</label
+                  >
+                  <div class="relative">
+                    <select
+                      v-model="register.currency"
+                      class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13px] text-neutral-900 bg-white cursor-pointer pr-8"
+                    >
+                      <option value="USD">🇺🇸 USD</option>
+                      <option value="EUR">🇪🇺 EUR</option>
+                      <option value="GBP">🇬🇧 GBP</option>
+                      <option value="SGD">🇸🇬 SGD</option>
+                      <option value="AUD">🇦🇺 AUD</option>
+                      <option value="CAD">🇨🇦 CAD</option>
+                      <option value="JPY">🇯🇵 JPY</option>
+                    </select>
+                  </div>
+                </div>
+                <!-- Timezone -->
+                <div>
+                  <label
+                    class="block text-[12.5px] font-semibold text-neutral-700 mb-1.5"
+                    >Timezone</label
+                  >
+                  <div class="relative">
+                    <select
+                      v-model="register.timezone"
+                      class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13px] text-neutral-900 bg-white cursor-pointer pr-8"
+                    >
+                      <optgroup label="Asia">
+                        <option value="Asia/Jakarta">Asia/Jakarta</option>
+                        <option value="Asia/Singapore">Asia/Singapore</option>
+                        <option value="Asia/Tokyo">Asia/Tokyo</option>
+                        <option value="Asia/Seoul">Asia/Seoul</option>
+                        <option value="Asia/Shanghai">Asia/Shanghai</option>
+                        <option value="Asia/Dubai">Asia/Dubai</option>
+                        <option value="Asia/Karachi">Asia/Karachi</option>
+                        <option value="Asia/Kolkata">Asia/Kolkata</option>
+                        <option value="Asia/Bangkok">Asia/Bangkok</option>
+                        <option value="Asia/Makassar">Asia/Makassar</option>
+                        <option value="Asia/Jayapura">Asia/Jayapura</option>
+                      </optgroup>
+                      <optgroup label="Europe">
+                        <option value="Europe/London">Europe/London</option>
+                        <option value="Europe/Berlin">Europe/Berlin</option>
+                        <option value="Europe/Paris">Europe/Paris</option>
+                        <option value="Europe/Amsterdam">
+                          Europe/Amsterdam
+                        </option>
+                      </optgroup>
+                      <optgroup label="Americas">
+                        <option value="America/New_York">
+                          America/New_York
+                        </option>
+                        <option value="America/Chicago">America/Chicago</option>
+                        <option value="America/Denver">America/Denver</option>
+                        <option value="America/Los_Angeles">
+                          America/Los_Angeles
+                        </option>
+                        <option value="America/Toronto">America/Toronto</option>
+                      </optgroup>
+                      <optgroup label="Pacific">
+                        <option value="Australia/Sydney">
+                          Australia/Sydney
+                        </option>
+                        <option value="Pacific/Auckland">
+                          Pacific/Auckland
+                        </option>
+                      </optgroup>
+                      <optgroup label="UTC">
+                        <option value="UTC">UTC</option>
+                      </optgroup>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Terms -->
+              <div class="flex items-start gap-2.5 mb-5">
+                <input
+                  v-model="register.agreed"
+                  id="terms"
+                  type="checkbox"
+                  class="mt-0.5 w-4 h-4 rounded border-neutral-300 accent-primary-700 cursor-pointer flex-shrink-0"
+                />
+                <label
+                  for="terms"
+                  class="text-[12.5px] text-neutral-500 leading-relaxed cursor-pointer"
+                >
+                  I agree to the
+                  <a
+                    href="#"
+                    class="text-primary-600 hover:underline font-medium"
+                    >Terms of Service</a
+                  >
+                  and
+                  <a
+                    href="#"
+                    class="text-primary-600 hover:underline font-medium"
+                    >Privacy Policy</a
+                  >
+                </label>
+              </div>
+
+              <!-- Submit -->
+              <button
+                @click="handleRegister"
+                class="w-full bg-primary-800 text-white font-semibold text-[14px] py-3.5 rounded-xl hover:bg-primary-700 transition-colors shadow-sm shadow-primary-900/20 mb-4"
+                :class="{ 'opacity-60 cursor-not-allowed': !register.agreed }"
+              >
+                Create Account
+              </button>
+
+              <!-- Switch -->
+              <p class="text-center text-[13px] text-neutral-400">
+                Already have an account?
+                <button
+                  @click="switchMode"
+                  class="font-semibold text-primary-700 hover:text-primary-500 transition-colors ml-1"
+                >
+                  Log in
+                </button>
+              </p>
+            </div>
           </div>
-          <div class="text-[12px] text-neutral-400">
-            © 2026 TradeSim · All financial calculations are for simulation
-            purposes only
-          </div>
-          <div class="flex items-center gap-5 text-[12px] text-neutral-500">
-            <a href="#" class="hover:text-primary-700 transition-colors"
-              >Privacy</a
-            >
-            <a href="#" class="hover:text-primary-700 transition-colors"
-              >Terms</a
-            >
-            <a href="#" class="hover:text-primary-700 transition-colors"
-              >Contact</a
-            >
-          </div>
+          <!-- /form wrapper -->
         </div>
-      </footer>
+        <!-- /right panel -->
+      </main>
+
+      <!-- ─── SUCCESS TOAST ─── -->
+      <transition name="toast">
+        <div
+          v-if="toast.show"
+          class="fixed bottom-6 right-6 z-[100] flex items-center gap-3 bg-primary-900 text-white text-[13px] font-medium px-5 py-3.5 rounded-xl shadow-xl shadow-primary-900/30 max-w-xs"
+        >
+          <div
+            class="w-5 h-5 rounded-full bg-success-500 flex items-center justify-center flex-shrink-0"
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <polyline
+                points="2,5.5 4,7.5 8,3"
+                stroke="white"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+          {{ toast.msg }}
+        </div>
+      </transition>
     </div>
 
+    <style>
+      .toast-enter-active,
+      .toast-leave-active {
+        transition: all 0.3s ease;
+      }
+      .toast-enter-from,
+      .toast-leave-to {
+        opacity: 0;
+        transform: translateY(12px) scale(0.97);
+      }
+    </style>
+
     <script>
-      const { createApp } = Vue;
+      const { createApp, ref, computed } = Vue;
       createApp({
-        data() {
+        setup() {
+          const mode = ref("login");
+
+          const login = ref({ email: "", password: "", showPass: false });
+          const register = ref({
+            name: "",
+            email: "",
+            password: "",
+            showPass: false,
+            currency: "USD",
+            timezone: "Asia/Jakarta",
+            agreed: false,
+          });
+
+          const toast = ref({ show: false, msg: "" });
+
+          function showToast(msg) {
+            toast.value = { show: true, msg };
+            setTimeout(() => (toast.value.show = false), 3000);
+          }
+
+          function switchMode() {
+            mode.value = mode.value === "login" ? "register" : "login";
+          }
+
+          function handleLogin() {
+            if (!login.value.email || !login.value.password) {
+              showToast("Please fill in all fields.");
+              return;
+            }
+            showToast("Logged in successfully! Redirecting…");
+          }
+
+          function handleRegister() {
+            if (!register.value.agreed) {
+              showToast("Please agree to the Terms of Service.");
+              return;
+            }
+            if (
+              !register.value.name ||
+              !register.value.email ||
+              !register.value.password
+            ) {
+              showToast("Please fill in all required fields.");
+              return;
+            }
+            showToast("Account created! Welcome to TradeSim 🎉");
+          }
+
+          const passwordStrength = computed(() => {
+            const p = register.value.password;
+            if (!p) return 0;
+            let s = 0;
+            if (p.length >= 8) s++;
+            if (/[A-Z]/.test(p)) s++;
+            if (/[0-9]/.test(p)) s++;
+            if (/[^A-Za-z0-9]/.test(p)) s++;
+            return Math.max(1, s);
+          });
+
+          const strengthColor = computed(() => {
+            const m = {
+              1: "bg-red-400",
+              2: "bg-gold-400",
+              3: "bg-gold-500",
+              4: "bg-success-500",
+            };
+            return m[passwordStrength.value] || "bg-neutral-200";
+          });
+
+          const strengthTextColor = computed(() => {
+            const m = {
+              1: "text-red-500",
+              2: "text-gold-600",
+              3: "text-gold-600",
+              4: "text-success-600",
+            };
+            return m[passwordStrength.value] || "";
+          });
+
+          const strengthLabel = computed(() => {
+            return (
+              ["", "Weak", "Fair", "Good", "Strong"][passwordStrength.value] ||
+              ""
+            );
+          });
+
           return {
-            features: [
-              {
-                title: "Simulation Management",
-                desc: "Create up to 20 independent simulations with custom rules, account sizes, and currencies. Track lifecycle from ACTIVE → PASSED or FAILED.",
-                iconBg: "bg-primary-50",
-                icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="6" rx="1.5" stroke="#615a87" stroke-width="1.5"/><rect x="10" y="2" width="6" height="6" rx="1.5" stroke="#615a87" stroke-width="1.5"/><rect x="2" y="10" width="6" height="6" rx="1.5" stroke="#615a87" stroke-width="1.5"/><rect x="10" y="10" width="6" height="6" rx="1.5" stroke="#615a87" stroke-width="1.5"/></svg>`,
-              },
-              {
-                title: "Challenge Rules Engine",
-                desc: "Configure static, daily, or trailing drawdown. Set profit targets, minimum trading days, and the consistency rule — all in one place.",
-                iconBg: "bg-gold-50",
-                icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2L16 15H2L9 2Z" stroke="#b08b17" stroke-width="1.5" stroke-linejoin="round"/><line x1="9" y1="8" x2="9" y2="11" stroke="#b08b17" stroke-width="1.5" stroke-linecap="round"/><circle cx="9" cy="13" r="0.8" fill="#b08b17"/></svg>`,
-              },
-              {
-                title: "Trade Journal",
-                desc: "Log closed trades with symbol, direction, lot size, session, strategy, and tags. Attach up to 5 screenshots per trade.",
-                iconBg: "bg-success-50",
-                icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="3" y="2" width="12" height="14" rx="2" stroke="#17ab70" stroke-width="1.5"/><line x1="6" y1="6" x2="12" y2="6" stroke="#17ab70" stroke-width="1.5" stroke-linecap="round"/><line x1="6" y1="9" x2="12" y2="9" stroke="#17ab70" stroke-width="1.5" stroke-linecap="round"/><line x1="6" y1="12" x2="9" y2="12" stroke="#17ab70" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-              },
-              {
-                title: "Equity Curve Dashboard",
-                desc: "Visualize equity over time with drawdown floor and profit target overlays. Daily P&L bars, calendar heatmap, and challenge progress gauges.",
-                iconBg: "bg-primary-50",
-                icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><polyline points="2,14 6,9 9,11 13,5 16,7" stroke="#615a87" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`,
-              },
-              {
-                title: "Deep Analytics",
-                desc: "Win rate, profit factor, expectancy, streaks — broken down by symbol, session, strategy, and day of week. Find what's working.",
-                iconBg: "bg-gold-50",
-                icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="3" y="10" width="3" height="6" rx="1" fill="#d9ab1c"/><rect x="7.5" y="6" width="3" height="10" rx="1" fill="#d9ab1c"/><rect x="12" y="2" width="3" height="14" rx="1" fill="#d9ab1c"/></svg>`,
-              },
-              {
-                title: "Firm Templates",
-                desc: "Start instantly with pre-configured FTMO, MyFundedFx, The5ers, or TopStep Futures rule sets. Or define fully custom challenge rules.",
-                iconBg: "bg-success-50",
-                icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 6h10M4 9h6M4 12h8" stroke="#17ab70" stroke-width="1.5" stroke-linecap="round"/><rect x="2" y="2" width="14" height="14" rx="2.5" stroke="#17ab70" stroke-width="1.5"/></svg>`,
-              },
-            ],
-            drawdownRules: [
-              {
-                dot: "bg-red-400",
-                type: "Static Max Drawdown",
-                desc: "Fixed floor from initial balance. Account can never fall below initial_balance − max_DD.",
-              },
-              {
-                dot: "bg-gold-400",
-                type: "Daily Drawdown",
-                desc: "Resets at configurable timezone. Protects against single bad days wiping the challenge.",
-              },
-              {
-                dot: "bg-primary-400",
-                type: "Trailing (High-Water Mark)",
-                desc: "Floor moves up as equity grows, never down. Closest to real funded account rules.",
-              },
-              {
-                dot: "bg-success-400",
-                type: "Combined Mode",
-                desc: "Enforce max DD and daily DD simultaneously. One violation fails the challenge.",
-              },
-            ],
-            journalFeatures: [
-              "Attach up to 5 screenshots per trade (JPEG, PNG, WEBP)",
-              "Filter by date range, symbol, session, strategy, or tags",
-              "Auto-calculated P&L, R:R, and risk metrics",
-              "User-defined strategies shared across all simulations",
-              "Free-form notes with full-text search",
-            ],
-            analyticsStats: [
-              {
-                value: "68.4%",
-                label: "Win Rate",
-                sub: "By symbol, session & strategy",
-                color: "text-success-600",
-              },
-              {
-                value: "2.3×",
-                label: "Profit Factor",
-                sub: "Rolling 20-trade trend",
-                color: "text-primary-700",
-              },
-              {
-                value: "$148",
-                label: "Expectancy",
-                sub: "Per trade in $",
-                color: "text-gold-600",
-              },
-              {
-                value: "7",
-                label: "Win Streak",
-                sub: "Current / longest on record",
-                color: "text-primary-600",
-              },
-              {
-                value: "1.8",
-                label: "Avg R:R",
-                sub: "Mean across all trades",
-                color: "text-primary-700",
-              },
-              {
-                value: "NY",
-                label: "Best Session",
-                sub: "New York highest win rate",
-                color: "text-success-600",
-              },
-              {
-                value: "-3.1%",
-                label: "Max Drawdown",
-                sub: "Reached vs allowed 10%",
-                color: "text-red-500",
-              },
-              {
-                value: "3.2×",
-                label: "Recovery Factor",
-                sub: "Net profit / max drawdown",
-                color: "text-gold-600",
-              },
-            ],
-            calendarDays: (() => {
-              // June 2026 starts Sunday (day 0), 30 days
-              const pnlMap = {
-                1: 320,
-                2: -180,
-                3: 0,
-                4: 480,
-                5: 0,
-                6: 0,
-                7: 0,
-                8: 220,
-                9: -90,
-                10: 550,
-                11: 180,
-                12: -310,
-                13: 0,
-                14: 0,
-                15: 90,
-                16: -60,
-                17: 280,
-                18: 420,
-                19: 0,
-                20: 0,
-                21: 0,
-                22: 150,
-                23: -240,
-                24: 380,
-                25: 60,
-                26: 310,
-                27: 0,
-                28: 0,
-                29: 220,
-                30: -80,
-              };
-              const days = [];
-              // June 2026: starts on Monday (day 1 in 0-indexed Mon = 0)
-              // Padding: Mon = index 0; June 1 = Monday → 0 padding
-              for (let d = 1; d <= 30; d++) {
-                const pnl = pnlMap[d] ?? 0;
-                let cls = "";
-                if (pnl > 400) cls = "bg-success-400 text-success-900";
-                else if (pnl > 100) cls = "bg-success-200 text-success-800";
-                else if (pnl === 0) cls = "bg-neutral-100 text-neutral-300";
-                else if (pnl > -200) cls = "bg-red-100 text-red-400";
-                else cls = "bg-red-300 text-red-800";
-                days.push({
-                  day: d,
-                  cls,
-                  label: pnl !== 0 ? (pnl > 0 ? `+$${pnl}` : `$${pnl}`) : "—",
-                });
-              }
-              return days;
-            })(),
-            trades: [
-              {
-                sym: "XAUUSD",
-                dir: "L",
-                pnl: 320,
-                rr: "2.4",
-                session: "London",
-              },
-              { sym: "EURUSD", dir: "S", pnl: -90, rr: "1.1", session: "NY" },
-              { sym: "NQ", dir: "L", pnl: 480, rr: "3.2", session: "NY" },
-              {
-                sym: "GBPUSD",
-                dir: "S",
-                pnl: 155,
-                rr: "1.8",
-                session: "London",
-              },
-              {
-                sym: "USDJPY",
-                dir: "L",
-                pnl: -210,
-                rr: "0.9",
-                session: "Asia",
-              },
-            ],
-            templates: [
-              {
-                name: "FTMO Standard",
-                account: "$100K",
-                maxDD: "10%",
-                dailyDD: "5%",
-                target: "10%",
-                minDays: "10",
-              },
-              {
-                name: "MyFundedFx",
-                account: "$100K",
-                maxDD: "12% trail",
-                dailyDD: "5%",
-                target: "10%",
-                minDays: "5",
-              },
-              {
-                name: "The5ers Hyper",
-                account: "$100K",
-                maxDD: "6% static",
-                dailyDD: "—",
-                target: "8%",
-                minDays: "—",
-              },
-              {
-                name: "TopStep Futures",
-                account: "$150K",
-                maxDD: "trail $3K",
-                dailyDD: "—",
-                target: "$9,000",
-                minDays: "10",
-              },
-            ],
+            mode,
+            login,
+            register,
+            toast,
+            switchMode,
+            handleLogin,
+            handleRegister,
+            passwordStrength,
+            strengthColor,
+            strengthTextColor,
+            strengthLabel,
           };
         },
       }).mount("#app");
