@@ -3,12 +3,53 @@ const defaultHeaders = {
   "Content-Type": "application/json",
 };
 
-async function request(path, options = {}) {
-  const response = await fetch(`${baseURL}${path}`, {
+async function refreshAccessToken() {
+  const refreshToken = localStorage.getItem("refreshToken");
+  if (!refreshToken) {
+    return null;
+  }
+
+  const response = await fetch(`${baseURL}/auth/refresh`, {
+    method: "POST",
     headers: defaultHeaders,
-    ...options,
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body: JSON.stringify({ refreshToken }),
   });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = await response.json();
+  if (data.accessToken) {
+    localStorage.setItem("accessToken", data.accessToken);
+  }
+
+  return data.accessToken || null;
+}
+
+async function request(path, options = {}, retry = true) {
+  const headers = {
+    ...defaultHeaders,
+    ...(options.headers || {}),
+  };
+
+  const accessToken = localStorage.getItem("accessToken");
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  const response = await fetch(`${baseURL}${path}`, {
+    ...options,
+    headers,
+    body: options.body != null ? JSON.stringify(options.body) : undefined,
+  });
+
+  if (response.status === 401 && retry) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      return request(path, options, false);
+    }
+  }
 
   if (!response.ok) {
     const errorText = await response.text();

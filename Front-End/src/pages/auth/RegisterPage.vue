@@ -18,6 +18,7 @@ const registerForm = ref({
 
 const handleRegister = async () => {
   try {
+    if (!validateForm()) return;
     await authStore.register(registerForm.value);
     alert("Register Successfully");
     router.push("/login");
@@ -62,6 +63,40 @@ const strengthTextColor = computed(() => {
 const strengthLabel = computed(() => {
   return ["", "Weak", "Fair", "Good", "Strong"][passwordStrength.value] || "";
 });
+
+// error validasi
+const errors = ref({
+  display_name: "",
+  email: "",
+  password: "",
+});
+
+const validateForm = () => {
+  errors.value = {
+    display_name: "",
+    email: "",
+    password: "",
+  };
+
+  let isValid = true;
+
+  if (!registerForm.value.display_name.trim()) {
+    errors.value.display_name = "Display name is required";
+    isValid = false;
+  }
+
+  if (!registerForm.value.email.trim()) {
+    errors.value.email = "Email is required";
+    isValid = false;
+  }
+
+  if (!registerForm.value.password.trim()) {
+    errors.value.password = "Password is required";
+    isValid = false;
+  }
+
+  return isValid;
+};
 </script>
 
 <template>
@@ -125,7 +160,13 @@ const strengthLabel = computed(() => {
             type="text"
             placeholder="e.g. John Trader"
             class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13.5px] text-neutral-900 placeholder-neutral-400 bg-white"
+            :class="
+              errors.display_name ? 'border-red-500' : 'border-neutral-200'
+            "
           />
+          <p v-if="errors.display_name" class="text-red-500 text-xs mt-1">
+            {{ errors.display_name }}
+          </p>
         </div>
 
         <!-- Email -->
@@ -139,7 +180,11 @@ const strengthLabel = computed(() => {
             type="email"
             placeholder="Enter your email address"
             class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13.5px] text-neutral-900 placeholder-neutral-400 bg-white"
+            :class="errors.email ? 'border-red-500' : 'border-neutral-200'"
           />
+          <p v-if="errors.email" class="text-red-500 text-xs mt-1">
+            {{ errors.email }}
+          </p>
         </div>
 
         <!-- Password -->
@@ -154,10 +199,11 @@ const strengthLabel = computed(() => {
               :type="registerForm.showPass ? 'text' : 'password'"
               placeholder="Minimum 8 characters"
               class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13.5px] text-neutral-900 placeholder-neutral-400 bg-white pr-11"
+              :class="errors.password ? 'border-red-500' : 'border-neutral-200'"
             />
             <button
               @click="registerForm.showPass = !registerForm.showPass"
-              class="pass-toggle absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+              class="pass-toggle absolute right-3.5 top-3.5 text-neutral-400 hover:text-neutral-600 transition-colors"
             >
               <svg
                 v-if="!registerForm.showPass"
@@ -194,6 +240,9 @@ const strengthLabel = computed(() => {
                 />
               </svg>
             </button>
+            <p v-if="errors.password" class="text-red-500 text-xs mt-1">
+              {{ errors.password }}
+            </p>
           </div>
           <!-- Password strength -->
           <div v-if="registerForm.password.length > 0" class="mt-2 flex gap-1">

@@ -1,11 +1,11 @@
 ====
 register dan login:
-- menampilkan required form
-- menampilkan error alert
+
+- menampilkan error alert berupa toast
 
 
 register:
-menampilkan error validasi
+menampilkan error validasi misal duplikat email dll
 
 
 api.js:

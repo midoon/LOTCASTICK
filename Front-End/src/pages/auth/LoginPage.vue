@@ -16,6 +16,7 @@ const login = ref({
 
 const handleLogin = async () => {
   try {
+    if (!validateForm()) return;
     await authStore.login(login.value);
 
     router.push("/dashboard");
@@ -23,6 +24,33 @@ const handleLogin = async () => {
     console.log(error);
     alert("Login gagal");
   }
+};
+
+// error validasi
+const errors = ref({
+  email: "",
+  password: "",
+});
+
+const validateForm = () => {
+  errors.value = {
+    email: "",
+    password: "",
+  };
+
+  let isValid = true;
+
+  if (!login.value.email.trim()) {
+    errors.value.email = "Email is required";
+    isValid = false;
+  }
+
+  if (!login.value.password.trim()) {
+    errors.value.password = "Password is required";
+    isValid = false;
+  }
+
+  return isValid;
 };
 </script>
 
@@ -92,7 +120,12 @@ const handleLogin = async () => {
             type="email"
             placeholder="Enter your email address"
             class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13.5px] text-neutral-900 placeholder-neutral-400 bg-white"
+            :class="errors.email ? 'border-red-500' : 'border-neutral-200'"
           />
+
+          <p v-if="errors.email" class="text-red-500 text-xs mt-1">
+            {{ errors.email }}
+          </p>
         </div>
 
         <!-- password -->
@@ -107,10 +140,11 @@ const handleLogin = async () => {
               :type="login.showPass ? 'text' : 'password'"
               placeholder="Enter your password"
               class="input-field w-full border border-neutral-200 rounded-xl px-4 py-3 text-[13.5px] text-neutral-900 placeholder-neutral-400 bg-white pr-11"
+              :class="errors.password ? 'border-red-500' : 'border-neutral-200'"
             />
             <button
               @click="login.showPass = !login.showPass"
-              class="pass-toggle absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+              class="pass-toggle absolute right-3.5 top-3.5 text-neutral-400 hover:text-neutral-600 transition-colors"
             >
               <svg
                 v-if="!login.showPass"
@@ -147,6 +181,9 @@ const handleLogin = async () => {
                 />
               </svg>
             </button>
+            <p v-if="errors.password" class="text-red-500 text-xs mt-1">
+              {{ errors.password }}
+            </p>
           </div>
         </div>
 
