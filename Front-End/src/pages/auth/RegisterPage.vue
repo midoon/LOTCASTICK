@@ -2,9 +2,11 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import { useToast } from "primevue/usetoast";
 
 const authStore = useAuthStore();
 const router = useRouter();
+const toast = useToast();
 
 import AuthLayout from "@/components/auth-page/AuthLayout.vue";
 
@@ -20,10 +22,21 @@ const handleRegister = async () => {
   try {
     if (!validateForm()) return;
     await authStore.register(registerForm.value);
-    alert("Register Successfully");
+    toast.add({
+      severity: "secondary",
+      summary: "Register Success",
+      detail: "Please login!",
+      life: 3000,
+    });
     router.push("/login");
   } catch (error) {
     console.log(error);
+    toast.add({
+      severity: "contrast",
+      summary: "Register Failed",
+      detail: error.message || "Email atau password salah",
+      life: 3000,
+    });
   }
 };
 

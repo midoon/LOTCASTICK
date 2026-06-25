@@ -2,11 +2,13 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import { useToast } from "primevue/usetoast";
 
 import AuthLayout from "@/components/auth-page/AuthLayout.vue";
 
 const authStore = useAuthStore();
 const router = useRouter();
+const toast = useToast();
 
 const login = ref({
   email: "",
@@ -19,10 +21,21 @@ const handleLogin = async () => {
     if (!validateForm()) return;
     await authStore.login(login.value);
 
+    toast.add({
+      severity: "secondary",
+      summary: "Login Success",
+      detail: "Welcome back!",
+      life: 3000,
+    });
     router.push("/dashboard");
   } catch (error) {
-    console.log(error);
-    alert("Login gagal");
+    // console.log(error);
+    toast.add({
+      severity: "contrast",
+      summary: "Login Failed",
+      detail: error.message || "Email atau password salah",
+      life: 3000,
+    });
   }
 };
 
@@ -64,6 +77,7 @@ const validateForm = () => {
       </div>
 
       <div class="flex gap-3 mb-6">
+        <!-- Vue Toast with primevue -->
         <button
           class="flex-1 flex items-center justify-center gap-2 border border-neutral-200 rounded-xl py-2.5 text-[13px] font-medium text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
         >

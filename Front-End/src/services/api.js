@@ -1,4 +1,4 @@
-const baseURL = "http://localhost:9000/api";
+const baseURL = import.meta.env.VITE_BE_BASEURL;
 const defaultHeaders = {
   "Content-Type": "application/json",
 };
@@ -52,8 +52,12 @@ async function request(path, options = {}, retry = true) {
   }
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`HTTP ${response.status}: ${errorText}`);
+    const errorData = await response.json();
+
+    throw {
+      status: response.status,
+      ...errorData,
+    };
   }
 
   return response.json();
