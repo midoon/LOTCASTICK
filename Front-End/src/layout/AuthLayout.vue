@@ -17,7 +17,10 @@
 
         <!-- Top: brand -->
         <div>
-          <div class="flex items-center gap-2.5 mb-16">
+          <RouterLink
+            class="flex items-center gap-2.5 mb-16 hover:cursor-pointer"
+            to="/"
+          >
             <div
               class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center"
             >
@@ -36,7 +39,7 @@
             <span class="font-bold text-white text-[16px] tracking-tight"
               >LotCastick</span
             >
-          </div>
+          </RouterLink>
 
           <!-- Headline -->
           <h1
@@ -194,7 +197,7 @@
 
     <!-- RIGHT PANEL -->
     <div class="flex-1 flex justify-center items-center bg-neutral-50 px-6">
-      <slot />
+      <RouterView />
     </div>
   </div>
 </template>

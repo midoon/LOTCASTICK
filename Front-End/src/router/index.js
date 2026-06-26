@@ -5,6 +5,8 @@ import WelcomePage from "@/pages/WelcomePage.vue";
 import DashboardPage from "@/pages/dashboard/DashboardPage.vue";
 import LoginPage from "@/pages/auth/LoginPage.vue";
 import RegisterPage from "@/pages/auth/RegisterPage.vue";
+import AuthLayout from "../layout/AuthLayout.vue";
+import DashboardLayout from "../layout/DashboardLayout.vue";
 
 const routes = [
   {
@@ -14,22 +16,35 @@ const routes = [
   },
 
   {
-    path: "/login",
-    name: "Login",
-    component: LoginPage,
+    path: "/",
+    component: AuthLayout,
+    children: [
+      {
+        path: "login",
+        name: "Login",
+        component: LoginPage,
+      },
+      {
+        path: "register",
+        name: "Register",
+        component: RegisterPage,
+      },
+    ],
   },
+
   {
-    path: "/register",
-    name: "Register",
-    component: RegisterPage,
-  },
-  {
-    path: "/dashboard",
-    name: "Dashboard",
-    component: DashboardPage,
+    path: "/",
+    component: DashboardLayout,
     meta: {
       requiresAuth: true,
     },
+    children: [
+      {
+        path: "dashboard",
+        name: "Dashboard",
+        component: DashboardPage,
+      },
+    ],
   },
 ];
 
