@@ -19,6 +19,7 @@
   ],
   "tags": [
     { "name": "Auth", "description": "Authentication and session management" },
+    { "name": "Dashboard", "description": "Simulation dashboard and status" },
     { "name": "Users", "description": "User profile management" },
     { "name": "Simulations", "description": "Prop firm simulation lifecycle" },
     { "name": "Trades", "description": "Trade journal entries" },
@@ -27,7 +28,7 @@
       "description": "Screenshot attachments for trades"
     },
     { "name": "Strategies", "description": "User-defined trading strategies" },
-    { "name": "Dashboard", "description": "Simulation dashboard and status" },
+
     {
       "name": "Analytics",
       "description": "Performance analytics and reporting"
@@ -783,6 +784,50 @@
             }
           },
           "401": { "$ref": "#/components/responses/401Unauthorized" }
+        }
+      }
+    },
+    "/simulations/{id}/dashboard": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get simulation dashboard data",
+        "description": "Returns all data needed for the dashboard view: equity curve, daily PnL, calendar heatmap, statistics summary, and current risk status.",
+        "operationId": "getSimulationDashboard",
+        "parameters": [
+          { "$ref": "#/components/parameters/SimulationId" },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["ALL", "1M", "1W", "1D"],
+              "default": "ALL"
+            },
+            "description": "Time window for equity curve and daily PnL data"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "message": {
+                      "type": "string",
+                      "example": "Dashboard data retrieved"
+                    },
+                    "data": { "$ref": "#/components/schemas/DashboardData" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "403": { "$ref": "#/components/responses/403Forbidden" },
+          "404": { "$ref": "#/components/responses/404NotFound" }
         }
       }
     },
@@ -1691,50 +1736,7 @@
         }
       }
     },
-    "/simulations/{id}/dashboard": {
-      "get": {
-        "tags": ["Dashboard"],
-        "summary": "Get simulation dashboard data",
-        "description": "Returns all data needed for the dashboard view: equity curve, daily PnL, calendar heatmap, statistics summary, and current risk status.",
-        "operationId": "getSimulationDashboard",
-        "parameters": [
-          { "$ref": "#/components/parameters/SimulationId" },
-          {
-            "name": "period",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": ["ALL", "1M", "1W", "1D"],
-              "default": "ALL"
-            },
-            "description": "Time window for equity curve and daily PnL data"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Dashboard data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": { "type": "boolean", "example": true },
-                    "message": {
-                      "type": "string",
-                      "example": "Dashboard data retrieved"
-                    },
-                    "data": { "$ref": "#/components/schemas/DashboardData" }
-                  }
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/401Unauthorized" },
-          "403": { "$ref": "#/components/responses/403Forbidden" },
-          "404": { "$ref": "#/components/responses/404NotFound" }
-        }
-      }
-    },
+
     "/simulations/{id}/analytics": {
       "get": {
         "tags": ["Analytics"],
