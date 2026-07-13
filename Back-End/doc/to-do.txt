@@ -1,2 +1,7 @@
 === 01-doc\04-openapi-spec-v2.json ===
-1. pengecekkan masih sampai di auth 
+1. pengecekan dokumntasi json simulations
+2. POST create simulation
+3. GET simulations
+4. GET simulation by id
+5. UPDATE simulation
+6. Delete simulation
