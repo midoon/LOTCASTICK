@@ -1,6 +1,8 @@
 package model
 
 import (
+	"context"
+	"lotcastick-backend/internal/dto"
 	"time"
 
 	"github.com/google/uuid"
@@ -42,4 +44,17 @@ func (s *Simulation) TableName() string {
 func (s *Simulation) BeforeCreate(tx *gorm.DB) (err error) {
 	s.ID = uuid.New().String()
 	return nil
+}
+
+type SimulationRepository interface {
+	Store(ctx context.Context, simulation *Simulation) error
+	FindByID(ctx context.Context, id string) (*Simulation, error)
+	FindByUserID(ctx context.Context, userID string) ([]Simulation, error)
+	Update(ctx context.Context, simulation *Simulation) error
+	Delete(ctx context.Context, id string) error
+	HardDelete(ctx context.Context, id string) error
+}
+
+type SimulationUsecase interface {
+	CreateSimulation(ctx context.Context, req dto.CreateSimulationRequest, userID string) (*dto.SimulationResponse, error)
 }

@@ -27,14 +27,20 @@ func NewBootstrapConfig(bsConfig *BootstrapConfig) {
 
 	userRepo := repository.NewUserRepository(bsConfig.Database)
 	tokenRepo := repository.NewRefreshTokenRepository(bsConfig.Database)
+	simulationRepo := repository.NewSimulationRepository(bsConfig.Database)
+	simulationRuleRepo := repository.NewSimulationRuleRepository(bsConfig.Database)
 
 	userUsecase := usecase.NewUserUsecase(userRepo, tokenRepo, bsConfig.Validate, bsConfig.ViperConfig)
 	userController := controller.NewUserController(userUsecase)
 
+	simulationUsecase := usecase.NewSimulationUsecase(simulationRepo, simulationRuleRepo, bsConfig.Validate, bsConfig.ViperConfig)
+	simulationController := controller.NewSimulationController(simulationUsecase)
+
 	routeConfig := route.RouteConfig{
-		Router:         bsConfig.Router,
-		UserController: userController,
-		JwtsecretKey:   bsConfig.ViperConfig.GetString("jwt.secret"),
+		Router:               bsConfig.Router,
+		UserController:       userController,
+		JwtsecretKey:         bsConfig.ViperConfig.GetString("jwt.secret"),
+		SimulationController: simulationController,
 	}
 	routeConfig.SetupRoutes()
 }

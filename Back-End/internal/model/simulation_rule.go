@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -46,4 +47,11 @@ func (r *SimulationRule) TableName() string {
 func (r *SimulationRule) BeforeCreate(tx *gorm.DB) (err error) {
 	r.ID = uuid.New().String()
 	return nil
+}
+
+type SimulationRuleRepository interface {
+	Store(ctx context.Context, rule *SimulationRule) error
+	FindBySimulationID(ctx context.Context, simulationID string) (*SimulationRule, error)
+	Update(ctx context.Context, rule *SimulationRule) error
+	Delete(ctx context.Context, simulationID string) error
 }

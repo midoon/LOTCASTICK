@@ -9,9 +9,10 @@ import (
 )
 
 type RouteConfig struct {
-	Router         *mux.Router
-	UserController *controller.UserController
-	JwtsecretKey   string
+	Router               *mux.Router
+	UserController       *controller.UserController
+	JwtsecretKey         string
+	SimulationController *controller.SimulationController
 }
 
 func (rc *RouteConfig) SetupRoutes() {
@@ -40,4 +41,5 @@ func (rc *RouteConfig) setupPublicRoutes(api *mux.Router) {
 
 func (rc *RouteConfig) setupPrivateRoutes(private *mux.Router) {
 	private.HandleFunc("/logout", rc.UserController.Logout).Methods("POST")
+	private.HandleFunc("/simulations", rc.SimulationController.CreateSimulation).Methods("POST")
 }
