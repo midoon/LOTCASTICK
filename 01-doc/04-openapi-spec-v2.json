@@ -1013,7 +1013,12 @@
                       "type": "string",
                       "example": "Simulation created successfully"
                     },
-                    "data": { "$ref": "#/components/schemas/SimulationDetail" }
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "simulation_id": { "type": "string", "format": "uuid" }
+                      }
+                    }
                   }
                 }
               }

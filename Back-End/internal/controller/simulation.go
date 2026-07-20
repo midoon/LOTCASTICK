@@ -46,6 +46,13 @@ func (c *SimulationController) CreateSimulation(w http.ResponseWriter, r *http.R
 		})
 	} else {
 		// nanti kita ubah response nya ke dto.SimulationResponse
-		util.WriteJSON(w, http.StatusOK, data)
+		response := dto.SimulationCreateResponse{
+			SimulationID: data.SimulationID,
+		}
+		util.WriteJSON(w, http.StatusOK, dto.DataResponse[dto.SimulationCreateResponse]{
+			Status:  true,
+			Message: "Simulation created successfully",
+			Data:    response,
+		})
 	}
 }

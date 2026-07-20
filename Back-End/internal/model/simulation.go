@@ -59,5 +59,5 @@ type SimulationRepository interface {
 }
 
 type SimulationUsecase interface {
-	CreateSimulation(ctx context.Context, req dto.CreateSimulationRequest, userID string) (*dto.SimulationResponse, error)
+	CreateSimulation(ctx context.Context, req dto.CreateSimulationRequest, userID string) (*dto.SimulationCreateResponse, error)
 }

@@ -36,7 +36,7 @@ func NewSimulationUsecase(tx database.Transaction, simulationRepo model.Simulati
 }
 
 // CreateSimulation implements [model.SimulationUsecase].
-func (s *simulationUsecase) CreateSimulation(ctx context.Context, req dto.CreateSimulationRequest, userID string) (*dto.SimulationResponse, error) {
+func (s *simulationUsecase) CreateSimulation(ctx context.Context, req dto.CreateSimulationRequest, userID string) (*dto.SimulationCreateResponse, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return nil, util.NewCustomError(http.StatusBadRequest, "validation error", err)
 	}
@@ -132,15 +132,6 @@ func (s *simulationUsecase) CreateSimulation(ctx context.Context, req dto.Create
 		DailyResetTime:          dailyResetTime,
 	}
 
-	// err = s.simulationRepo.Store(ctx, simulation)
-	// if err != nil {
-	// 	return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
-	// }
-
-	// err = s.simulationRuleRepo.Store(ctx, simulationRule)
-	// if err != nil {
-	// 	return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
-
 	err = s.tx.WithinTransaction(ctx, func(tx *gorm.DB) error {
 		simRepo := s.simulationRepo.WithTX(tx)
 		ruleRepo := s.simulationRuleRepo.WithTX(tx)
@@ -157,8 +148,7 @@ func (s *simulationUsecase) CreateSimulation(ctx context.Context, req dto.Create
 	})
 
 	// nanti kita tambahka field yang lainnya
-	return &dto.SimulationResponse{
-		ID:   simulation.ID,
-		Name: simulation.Name,
+	return &dto.SimulationCreateResponse{
+		SimulationID: simulation.ID,
 	}, nil
 }

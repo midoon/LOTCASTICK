@@ -27,6 +27,10 @@ type CreateSimulationRulesRequest struct {
 }
 
 // ========== Response DTOs ==========
+type SimulationCreateResponse struct {
+	SimulationID string `json:"simulation_id"`
+}
+
 type SimulationResponse struct {
 	ID                   string                       `json:"id"`
 	Name                 string                       `json:"name"`
