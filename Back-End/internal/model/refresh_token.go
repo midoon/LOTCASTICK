@@ -22,7 +22,9 @@ func (rt *RefreshToken) TableName() string {
 }
 
 func (rt *RefreshToken) BeforeCreate(tx *gorm.DB) (err error) {
-	rt.ID = uuid.New().String()
+	if rt.ID == "" {
+		rt.ID = uuid.New().String()
+	}
 	return nil
 }
 

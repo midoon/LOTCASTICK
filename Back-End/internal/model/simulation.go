@@ -42,11 +42,14 @@ func (s *Simulation) TableName() string {
 }
 
 func (s *Simulation) BeforeCreate(tx *gorm.DB) (err error) {
-	s.ID = uuid.New().String()
+	if s.ID == "" {
+		s.ID = uuid.New().String()
+	}
 	return nil
 }
 
 type SimulationRepository interface {
+	WithTX(tx *gorm.DB) SimulationRepository
 	Store(ctx context.Context, simulation *Simulation) error
 	FindByID(ctx context.Context, id string) (*Simulation, error)
 	FindByUserID(ctx context.Context, userID string) ([]Simulation, error)

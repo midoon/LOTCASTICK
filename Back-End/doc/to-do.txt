@@ -1,6 +1,15 @@
 === 01-doc\04-openapi-spec-v2.json ===
 1. pengecekan dokumntasi json simulations
 2. POST create simulation
+    - cek postman: error
+        "internal server error: ERROR: insert or update on table \"simulations\" violates foreign key constraint \"fk_simulations_template_id\" (SQLSTATE 23503)"
+        => jika create bukan dari template, maka tidak usah pakai atribute template
+        ""internal server error: ERROR: invalid input syntax for type uuid: \"\" (SQLSTATE 22P02)""
+        => error ketika menyimpan simulation rule, simulation id tidak terbaca tapi simulation sudah tersimpan,
+        gunakan DB transaction
+    - ganti responsenya
+
+
 3. GET simulations
 4. GET simulation by id
 5. UPDATE simulation

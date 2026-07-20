@@ -28,7 +28,9 @@ func (u *User) TableName() string {
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
-	u.ID = uuid.New().String()
+	if u.ID == "" {
+		u.ID = uuid.New().String()
+	}
 	return nil
 }
 

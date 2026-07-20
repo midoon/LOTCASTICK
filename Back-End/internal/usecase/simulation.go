@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"fmt"
+	"lotcastick-backend/internal/database"
 	"lotcastick-backend/internal/dto"
 	"lotcastick-backend/internal/model"
 	"lotcastick-backend/internal/util"
@@ -9,19 +11,23 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"github.com/spf13/viper"
+	"gorm.io/gorm"
 )
 
 type simulationUsecase struct {
+	tx                 database.Transaction
 	simulationRepo     model.SimulationRepository
 	simulationRuleRepo model.SimulationRuleRepository
 	validate           *validator.Validate
 	viperConfig        *viper.Viper
 }
 
-func NewSimulationUsecase(simulationRepo model.SimulationRepository, simulationRuleRepo model.SimulationRuleRepository, validate *validator.Validate, viperConfig *viper.Viper) model.SimulationUsecase {
+func NewSimulationUsecase(tx database.Transaction, simulationRepo model.SimulationRepository, simulationRuleRepo model.SimulationRuleRepository, validate *validator.Validate, viperConfig *viper.Viper) model.SimulationUsecase {
 	return &simulationUsecase{
+		tx:                 tx,
 		simulationRepo:     simulationRepo,
 		simulationRuleRepo: simulationRuleRepo,
 		validate:           validate,
@@ -44,16 +50,24 @@ func (s *simulationUsecase) CreateSimulation(ctx context.Context, req dto.Create
 	if err != nil {
 		return nil, util.NewCustomError(http.StatusBadRequest, "invalid started at date", err)
 	}
+	// buat ID untuk simulation secara manual
 
+	simulationID := uuid.New().String()
 	simulation := &model.Simulation{
+		ID:            simulationID,
 		UserID:        userID,
-		TemplateID:    req.TemplateID,
 		Name:          req.Name,
 		AccountSize:   accountSize,
 		CurrentEquity: accountSize,
 		Currency:      req.Currency,
 		Status:        model.SimulationStatusActive,
 		StartedAt:     startedAt,
+	}
+
+	if req.TemplateID != nil {
+		fmt.Println("Template ID:", *req.TemplateID) // Debugging line to print the template ID
+		templateId := *req.TemplateID
+		simulation.TemplateID = &templateId
 	}
 
 	maxDrawdownPctValue := ""
@@ -91,7 +105,7 @@ func (s *simulationUsecase) CreateSimulation(ctx context.Context, req dto.Create
 		return nil, util.NewCustomError(http.StatusBadRequest, "invalid profit target percentage", err)
 	}
 
-	dailyResetTime, err := time.Parse("15:04", req.Rules.DailyResetTime)
+	dailyResetTime, err := time.Parse("15:04:00", req.Rules.DailyResetTime)
 	if err != nil {
 		return nil, util.NewCustomError(http.StatusBadRequest, "invalid daily reset time", err)
 	}
@@ -105,6 +119,7 @@ func (s *simulationUsecase) CreateSimulation(ctx context.Context, req dto.Create
 	}
 
 	simulationRule := &model.SimulationRule{
+		SimulationID:            simulationID,
 		DrawdownType:            model.DrawdownType(req.Rules.DrawdownType),
 		MaxDrawdownPct:          &maxDrawdownPct,
 		DailyDrawdownPct:        &dailyDrawdownPct,
@@ -117,15 +132,29 @@ func (s *simulationUsecase) CreateSimulation(ctx context.Context, req dto.Create
 		DailyResetTime:          dailyResetTime,
 	}
 
-	err = s.simulationRepo.Store(ctx, simulation)
-	if err != nil {
-		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
-	}
+	// err = s.simulationRepo.Store(ctx, simulation)
+	// if err != nil {
+	// 	return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+	// }
 
-	err = s.simulationRuleRepo.Store(ctx, simulationRule)
-	if err != nil {
-		return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
-	}
+	// err = s.simulationRuleRepo.Store(ctx, simulationRule)
+	// if err != nil {
+	// 	return nil, util.NewCustomError(http.StatusInternalServerError, "internal server error", err)
+
+	err = s.tx.WithinTransaction(ctx, func(tx *gorm.DB) error {
+		simRepo := s.simulationRepo.WithTX(tx)
+		ruleRepo := s.simulationRuleRepo.WithTX(tx)
+
+		if err := simRepo.Store(ctx, simulation); err != nil {
+			return err
+		}
+
+		if err := ruleRepo.Store(ctx, simulationRule); err != nil {
+			return err
+		}
+
+		return nil
+	})
 
 	// nanti kita tambahka field yang lainnya
 	return &dto.SimulationResponse{

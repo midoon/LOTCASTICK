@@ -19,6 +19,12 @@ func NewSimulationRepository(db *gorm.DB) model.SimulationRepository {
 	}
 }
 
+func (r *simulationRepository) WithTX(tx *gorm.DB) model.SimulationRepository {
+	return &simulationRepository{
+		db: tx,
+	}
+}
+
 func (r *simulationRepository) Store(ctx context.Context, simulation *model.Simulation) error {
 	return r.db.
 		WithContext(ctx).

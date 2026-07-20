@@ -45,11 +45,14 @@ func (r *SimulationRule) TableName() string {
 }
 
 func (r *SimulationRule) BeforeCreate(tx *gorm.DB) (err error) {
-	r.ID = uuid.New().String()
+	if r.ID == "" {
+		r.ID = uuid.New().String()
+	}
 	return nil
 }
 
 type SimulationRuleRepository interface {
+	WithTX(tx *gorm.DB) SimulationRuleRepository
 	Store(ctx context.Context, rule *SimulationRule) error
 	FindBySimulationID(ctx context.Context, simulationID string) (*SimulationRule, error)
 	Update(ctx context.Context, rule *SimulationRule) error

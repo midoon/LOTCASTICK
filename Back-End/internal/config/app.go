@@ -2,6 +2,7 @@ package config
 
 import (
 	"lotcastick-backend/internal/controller"
+	"lotcastick-backend/internal/database"
 	"lotcastick-backend/internal/delivery/http/route"
 	"lotcastick-backend/internal/repository"
 	"lotcastick-backend/internal/usecase"
@@ -29,11 +30,12 @@ func NewBootstrapConfig(bsConfig *BootstrapConfig) {
 	tokenRepo := repository.NewRefreshTokenRepository(bsConfig.Database)
 	simulationRepo := repository.NewSimulationRepository(bsConfig.Database)
 	simulationRuleRepo := repository.NewSimulationRuleRepository(bsConfig.Database)
+	tx := database.NewTransactionManager(bsConfig.Database)
 
 	userUsecase := usecase.NewUserUsecase(userRepo, tokenRepo, bsConfig.Validate, bsConfig.ViperConfig)
 	userController := controller.NewUserController(userUsecase)
 
-	simulationUsecase := usecase.NewSimulationUsecase(simulationRepo, simulationRuleRepo, bsConfig.Validate, bsConfig.ViperConfig)
+	simulationUsecase := usecase.NewSimulationUsecase(tx, simulationRepo, simulationRuleRepo, bsConfig.Validate, bsConfig.ViperConfig)
 	simulationController := controller.NewSimulationController(simulationUsecase)
 
 	routeConfig := route.RouteConfig{
